@@ -4,140 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Market Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        }
+        <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
 
-        body {
-            background: #f0f2f5;
-            padding: 20px;
-        }
+body {
+    background: #f0f2f5;
+    padding: 20px;
+}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 0 10px;
-        }
+/* Header Styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
 
-        .search-box {
-            padding: 10px 15px;
-            width: 300px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            outline: none;
-        }
+.header h1 {
+    font-size: 24px;
+    color: #333;
+}
 
-        .search-box:focus {
-            border-color: #0066cc;
-            box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
-        }
+.search-box {
+    padding: 12px 15px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+}
 
-        .crypto-table {
-            width: 100%;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border-collapse: collapse;
-        }
+.search-box:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+}
 
-        .crypto-table th,
-        .crypto-table td {
-            padding: 15px;
-            text-align: right;
-            border-bottom: 1px solid #eee;
-        }
-
-        .crypto-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            text-align: right;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-        }
-
-        .crypto-table th:hover {
-            background: #e9ecef;
-        }
-
-        .crypto-table th:first-child,
-        .crypto-table td:first-child {
-            text-align: left;
-        }
-
-        .symbol-cell {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .crypto-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-
-        .symbol-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .base-symbol {
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .quote-symbol {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .up {
-            color: #00c853;
-        }
-
-        .down {
-            color: #ff3d00;
-        }
-
-        .neutral {
-            color: #666;
-        }
-
-        .price-up {
-            animation: priceUp 1s ease;
-        }
-
-        .price-down {
-            animation: priceDown 1s ease;
-        }
-
-        @keyframes priceUp {
-            0% { background-color: rgba(0, 200, 83, 0.2); }
-            100% { background-color: transparent; }
-        }
-
-        @keyframes priceDown {
-            0% { background-color: rgba(255, 61, 0, 0.2); }
-            100% { background-color: transparent; }
-        }
-/* Alert */
+/* Alert Container */
 .alert-container {
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -150,15 +67,20 @@
     margin-bottom: 15px;
 }
 
+.alert-header h3 {
+    font-size: 18px;
+    color: #333;
+}
+
 .alert-filters {
     display: flex;
     gap: 10px;
 }
 
 .time-filter {
-    padding: 6px 12px;
+    padding: 8px 16px;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 8px;
     background: white;
     cursor: pointer;
     font-size: 14px;
@@ -176,119 +98,414 @@
 }
 
 .alert-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
 }
 
 .alert-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 6px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
     background: #f8f9fa;
     border: 1px solid #eee;
     font-size: 14px;
-    animation: alertFadeIn 0.5s ease;
+    transition: transform 0.2s ease;
 }
 
-.alert-item.extreme {
-    background: rgba(244, 67, 54, 0.1);
-    border-color: #f44336;
+.alert-item:hover {
+    transform: translateY(-2px);
 }
 
-.alert-item.high {
-    background: rgba(255, 152, 0, 0.1);
-    border-color: #ff9800;
+/* Table Styles */
+.crypto-table {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-@keyframes alertFadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+.crypto-table table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.alert-item .change-value {
+.crypto-table th,
+.crypto-table td {
+    padding: 15px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+}
+
+.crypto-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.crypto-table th:hover {
+    background: #e9ecef;
+}
+
+.crypto-table th:first-child,
+.crypto-table td:first-child {
+    text-align: left;
+    padding-left: 20px;
+}
+
+/* Symbol Cell */
+.symbol-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.crypto-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.symbol-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.base-symbol {
     font-weight: bold;
+    font-size: 15px;
 }
 
-.alert-item .time-label {
-    color: #666;
+.quote-symbol {
     font-size: 12px;
-}
-
-.no-alerts {
     color: #666;
-    font-style: italic;
-    padding: 10px;
 }
-        .high-volatility {
-            background-color: rgba(255, 152, 0, 0.1);
-        }
 
-        .extreme-volatility {
-            background-color: rgba(244, 67, 54, 0.1);
-        }
+/* Price Changes */
+.up, .down, .neutral {
+    font-weight: 600;
+}
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 14px;
-        }
+.up { color: #00c853; }
+.down { color: #ff3d00; }
+.neutral { color: #666; }
 
-        .error {
-            text-align: center;
-            padding: 40px;
-            color: #ff3d00;
-        }
+/* Animations */
+.price-up, .price-down {
+    animation-duration: 1s;
+    animation-fill-mode: both;
+}
 
-        .retry-button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background: #0066cc;
-            color: white;
-            cursor: pointer;
-        }
+.price-up {
+    animation-name: priceUp;
+}
 
-        .retry-button:hover {
-            background: #0052a3;
-        }
+.price-down {
+    animation-name: priceDown;
+}
 
-        @media (max-width: 1200px) {
-            .container {
-                padding: 0;
-            }
+@keyframes priceUp {
+    0% { background-color: rgba(0, 200, 83, 0.2); }
+    100% { background-color: transparent; }
+}
 
-            .crypto-table th,
-            .crypto-table td {
-                padding: 10px;
-                font-size: 14px;
-            }
+@keyframes priceDown {
+    0% { background-color: rgba(255, 61, 0, 0.2); }
+    100% { background-color: transparent; }
+}
 
-            .symbol-text {
-                max-width: 100px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-        }
+/* Volatility Indicators */
+.high-volatility {
+    background-color: rgba(255, 152, 0, 0.1);
+}
 
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 10px;
-            }
+.extreme-volatility {
+    background-color: rgba(244, 67, 54, 0.1);
+}
 
-            .search-box {
-                width: 100%;
-            }
+/* Loading & Error States */
+.loading, .error {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 14px;
+}
 
-            .crypto-table {
-                font-size: 12px;
-            }
-        }
+.error {
+    color: #ff3d00;
+}
+
+.retry-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #0066cc;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.retry-button:hover {
+    background: #0052a3;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .container {
+        padding: 0 15px;
+    }
+
+    .alert-list {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .crypto-table th,
+    .crypto-table td {
+        padding: 12px 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .alert-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .alert-filters {
+        flex-wrap: wrap;
+    }
+
+    .time-filter {
+        flex: 1;
+        padding: 8px;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .alert-list {
+        grid-template-columns: 1fr;
+    }
+
+    .crypto-table {
+        display: block;
+        overflow-x: hidden;
+        border-radius: 8px;
+        background: transparent;
+        box-shadow: none;
+    }
+
+
+    .crypto-table table {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .crypto-table tr {
+        display: flex;
+        flex-direction: column;
+        background: white;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 12px;
+    }
+
+    .crypto-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        text-align: right;
+        font-size: 13px;
+    }
+
+    .crypto-table td:last-child {
+        border-bottom: none;
+    }
+
+    /* Thêm labels cho các cột */
+    .crypto-table td:nth-child(2)::before {
+        content: "Giá hiện tại:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(3)::before {
+        content: "Thay đổi 1h:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(4)::before {
+        content: "Thay đổi 4h:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(5)::before {
+        content: "Thay đổi 8h:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(6)::before {
+        content: "Thay đổi 24h:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(7)::before {
+        content: "Cao nhất:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(8)::before {
+        content: "Thấp nhất:";
+        font-weight: 600;
+    }
+
+    .crypto-table td:nth-child(9)::before {
+        content: "Khối lượng:";
+        font-weight: 600;
+    }
+
+    /* Điều chỉnh cell đầu tiên (symbol) */
+    .crypto-table td:first-child {
+        border-bottom: 2px solid #eee;
+        padding-bottom: 12px;
+        margin-bottom: 8px;
+    }
+
+    .crypto-table td:first-child::before {
+        content: none;
+    }
+
+    /* Điều chỉnh symbol cell */
+    .symbol-cell {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    .crypto-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .base-symbol {
+        font-size: 16px;
+    }
+
+    .quote-symbol {
+        font-size: 12px;
+    }
+
+    /* Price changes */
+    .up, .down, .neutral {
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .up {
+        background-color: rgba(0, 200, 83, 0.1);
+    }
+
+    .down {
+        background-color: rgba(255, 61, 0, 0.1);
+    }
+
+    /* Animation adjustments */
+    .price-up, .price-down {
+        animation: none;
+    }
+
+    /* Volatility indicators */
+    .high-volatility {
+        border-left: 3px solid #ff9800;
+    }
+
+    .extreme-volatility {
+        border-left: 3px solid #f44336;
+    }
+    
+    .crypto-table thead {
+        display: none; /* Ẩn header trên mobile */
+    }
+    .crypto-table tbody {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #121212;
+    }
+
+    .header h1 {
+        color: #fff;
+    }
+
+    .alert-container,
+    .crypto-table {
+        background: #1e1e1e;
+    }
+
+    .crypto-table th {
+        background: #252525;
+        color: #fff;
+    }
+
+    .crypto-table td {
+        color: #fff;
+        border-bottom-color: #333;
+    }
+
+    .alert-item {
+        background: #252525;
+        border-color: #333;
+        color: #fff;
+    }
+
+    .time-filter {
+        background: #252525;
+        border-color: #333;
+        color: #fff;
+    }
+
+    .search-box {
+        background: #252525;
+        border-color: #333;
+        color: #fff;
+    }
+}
     </style>
 </head>
 <body>
