@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Market Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .search-box {
+            padding: 10px 15px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0,102,204,0.2);
+        }
+
+        .crypto-table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+        }
+
+        .crypto-table th,
+        .crypto-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        .crypto-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            text-align: right;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .crypto-table th:hover {
+            background: #e9ecef;
+        }
+
+        .crypto-table th:first-child,
+        .crypto-table td:first-child {
+            text-align: left;
+        }
+
+        .symbol-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .crypto-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .symbol-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .base-symbol {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .quote-symbol {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .up {
+            color: #00c853;
+        }
+
+        .down {
+            color: #ff3d00;
+        }
+
+        .neutral {
+            color: #666;
+        }
+
+        .price-up {
+            animation: priceUp 1s ease;
+        }
+
+        .price-down {
+            animation: priceDown 1s ease;
+        }
+
+        @keyframes priceUp {
+            0% { background-color: rgba(0, 200, 83, 0.2); }
+            100% { background-color: transparent; }
+        }
+
+        @keyframes priceDown {
+            0% { background-color: rgba(255, 61, 0, 0.2); }
+            100% { background-color: transparent; }
+        }
+/* Alert */
+.alert-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.alert-filters {
+    display: flex;
+    gap: 10px;
+}
+
+.time-filter {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.time-filter:hover {
+    background: #f0f2f5;
+}
+
+.time-filter.active {
+    background: #0066cc;
+    color: white;
+    border-color: #0066cc;
+}
+
+.alert-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8f9fa;
+    border: 1px solid #eee;
+    font-size: 14px;
+    animation: alertFadeIn 0.5s ease;
+}
+
+.alert-item.extreme {
+    background: rgba(244, 67, 54, 0.1);
+    border-color: #f44336;
+}
+
+.alert-item.high {
+    background: rgba(255, 152, 0, 0.1);
+    border-color: #ff9800;
+}
+
+@keyframes alertFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.alert-item .change-value {
+    font-weight: bold;
+}
+
+.alert-item .time-label {
+    color: #666;
+    font-size: 12px;
+}
+
+.no-alerts {
+    color: #666;
+    font-style: italic;
+    padding: 10px;
+}
+        .high-volatility {
+            background-color: rgba(255, 152, 0, 0.1);
+        }
+
+        .extreme-volatility {
+            background-color: rgba(244, 67, 54, 0.1);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff3d00;
+        }
+
+        .retry-button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #0066cc;
+            color: white;
+            cursor: pointer;
+        }
+
+        .retry-button:hover {
+            background: #0052a3;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                padding: 0;
+            }
+
+            .crypto-table th,
+            .crypto-table td {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .symbol-text {
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .crypto-table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Crypto Market Tracker</h1>
+            <input type="text" class="search-box" placeholder="Tìm kiếm theo tên coin...">
+        </div>
+<!-- Thêm phần này -->
+<div class="alert-container">
+    <div class="alert-header">
+        <h3>Cảnh báo biến động</h3>
+        <div class="alert-filters">
+            <button class="time-filter active" data-time="1h">1H</button>
+            <button class="time-filter" data-time="4h">4H</button>
+            <button class="time-filter" data-time="8h">8H</button>
+            <button class="time-filter" data-time="24h">24H</button>
+        </div>
+    </div>
+    <div class="alert-list" id="alertList">
+        <!-- Alerts will be added here -->
+    </div>
+</div>
+        <table class="crypto-table">
+            <thead>
+                <tr>
+                    <th data-sort="s">Coin</th>
+                    <th data-sort="p">Giá hiện tại</th>
+                    <th data-sort="1h">1h %</th>
+                    <th data-sort="4h">4h %</th>
+                    <th data-sort="8h">8h %</th>
+                    <th data-sort="24h">24h %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="9" class="loading">
+                        Đang tải dữ liệu...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
