@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binance Markets</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #0b0e11;
+            color: #eaecef;
+        }
+
+        .header {
+            background-color: #1e2329;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            color: #f0b90b;
+            font-weight: 600;
+        }
+
+        .market-tabs {
+            display: flex;
+            overflow-x: auto;
+            background-color: #1e2329;
+            padding: 0.5rem;
+            gap: 1rem;
+            border-bottom: 1px solid #2b3139;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .market-tab {
+            padding: 0.5rem 1rem;
+            color: #848e9c;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+
+        .market-tab.active {
+            color: #f0b90b;
+            background-color: #2b3139;
+        }
+
+        .trend-tabs {
+            display: flex;
+            background-color: #1e2329;
+            padding: 0.5rem 1rem;
+            gap: 0.5rem;
+            border-bottom: 1px solid #2b3139;
+        }
+
+        .trend-tab {
+            padding: 0.4rem 1rem;
+            color: #848e9c;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+
+        .trend-tab.active {
+            color: #eaecef;
+            background-color: #2b3139;
+        }
+
+        .search-bar {
+            margin: 1rem;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 4px;
+            border: 1px solid #2b3139;
+            background-color: #1e2329;
+            color: #eaecef;
+            font-size: 0.9rem;
+        }
+
+        .market-list {
+            padding: 0 1rem;
+        }
+
+        .list-header {
+            display: grid;
+            grid-template-columns: 1fr repeat(2, minmax(80px, 1fr));
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #2b3139;
+            color: #848e9c;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .list-header > div:not(:first-child) {
+            text-align: right;
+        }
+
+        .market-item {
+            display: grid;
+            grid-template-columns: 1fr repeat(2, minmax(80px, 1fr));
+            padding: 1rem 0;
+            border-bottom: 1px solid #2b3139;
+            align-items: center;
+        }
+
+        .symbol {
+            font-weight: 500;
+            font-size: 1rem;
+            color: #eaecef;
+        }
+
+        .price-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #eaecef;
+            text-align: right;
+        }
+
+        .price-change {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #fff;
+            text-align: right;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .positive {
+            background-color: #0ecb81;
+        }
+
+        .negative {
+            background-color: #f6465d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #848e9c;
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .market-tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .market-tabs {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Markets</h1>
+    </div>
+
+    <div class="market-tabs">
+        <div class="market-tab active" data-market="all">All</div>
+        <div class="market-tab" data-market="USDT">USDT</div>
+        <div class="market-tab" data-market="BNB">BNB</div>
+        <div class="market-tab" data-market="BTC">BTC</div>
+        <div class="market-tab" data-market="ETH">ETH</div>
+    </div>
+
+    <div class="trend-tabs">
+        <div class="trend-tab active" data-trend="all">Tất cả</div>
+        <div class="trend-tab" data-trend="gainers">Tăng giá</div>
+        <div class="trend-tab" data-trend="losers">Giảm giá</div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" placeholder="Search" id="searchInput">
+    </div>
+
+    <div class="list-header">
+        <div>Cặp giao dịch</div>
+        <div>Giá gần nhất</div>
+        <div>Thay đổi 24h</div>
+    </div>
+
+    <div class="market-list" id="marketList">
+        <div class="loading">Loading markets...</div>
+    </div>
+
+    <script>
+        let ws;
+        let currentMarket = 'all';
+        let currentTrend = 'all';
+        let marketData = new Map();
+        let searchTerm = '';
+
+        function connectWebSocket() {
+            ws = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                data.forEach(ticker => {
+                    marketData.set(ticker.s, ticker);
+                });
+                updateMarketList();
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed. Reconnecting...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        function formatSymbol(symbol) {
+            const bases = ['USDT', 'BNB', 'BTC', 'ETH'];
+            let base = bases.find(b => symbol.endsWith(b)) || '';
+            let quote = symbol.slice(0, symbol.length - base.length);
+            return `${quote}/${base}`;
+        }
+
+        function formatPrice(price) {
+            const numPrice = parseFloat(price);
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: numPrice < 1 ? 6 : numPrice < 10 ? 4 : numPrice < 100 ? 3 : 2,
+                maximumFractionDigits: numPrice < 1 ? 6 : numPrice < 10 ? 4 : numPrice < 100 ? 3 : 2
+            }).format(numPrice);
+        }
+
+        function formatPercent(percent) {
+            return parseFloat(percent).toFixed(2);
+        }
+
+        function filterMarkets(market, trend, searchTerm) {
+            return Array.from(marketData.values()).filter(ticker => {
+                const matchesMarket = market === 'all' || ticker.s.endsWith(market);
+                const matchesSearch = ticker.s.toLowerCase().includes(searchTerm.toLowerCase());
+                const priceChange = parseFloat(ticker.P);
+
+                let matchesTrend = true;
+                if (trend === 'gainers') {
+                    matchesTrend = priceChange > 0;
+                } else if (trend === 'losers') {
+                    matchesTrend = priceChange < 0;
+                }
+
+                return matchesMarket && matchesSearch && matchesTrend;
+            });
+        }
+
+        function createMarketItem(ticker) {
+            const isPositive = parseFloat(ticker.P) >= 0;
+            return `
+                <div class="market-item">
+                    <div class="symbol">${formatSymbol(ticker.s)}</div>
+                    <div class="price-value">${formatPrice(ticker.c)}</div>
+                    <div style="text-align: right;">
+                        <span class="price-change ${isPositive ? 'positive' : 'negative'}">
+                            ${isPositive ? '+' : ''}${formatPercent(ticker.P)}%
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateMarketList() {
+            const filteredMarkets = filterMarkets(currentMarket, currentTrend, searchTerm);
+            const sortedMarkets = filteredMarkets.sort((a, b) => {
+                if (currentTrend === 'gainers') {
+                    return parseFloat(b.P) - parseFloat(a.P);
+                } else if (currentTrend === 'losers') {
+                    return parseFloat(a.P) - parseFloat(b.P);
+                }
+                const aSymbol = formatSymbol(a.s);
+                const bSymbol = formatSymbol(b.s);
+                return aSymbol.localeCompare(bSymbol);
+            });
+
+            const marketListEl = document.getElementById('marketList');
+            if (sortedMarkets.length === 0) {
+                marketListEl.innerHTML = '<div class="loading">No markets found</div>';
+                return;
+            }
+
+            marketListEl.innerHTML = sortedMarkets
+                .map(createMarketItem)
+                .join('');
+        }
+
+        // Event Listeners
+        document.querySelector('.market-tabs').addEventListener('click', (e) => {
+            const tab = e.target.closest('.market-tab');
+            if (!tab) return;
+
+            document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentMarket = tab.dataset.market;
+            updateMarketList();
+        });
+
+        document.querySelector('.trend-tabs').addEventListener('click', (e) => {
+            const tab = e.target.closest('.trend-tab');
+            if (!tab) return;
+
+            document.querySelectorAll('.trend-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentTrend = tab.dataset.trend;
+            updateMarketList();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            updateMarketList();
+        });
+
+        // Initialize
+        connectWebSocket();
+    </script>
+</body>
+</html>
