@@ -5,46 +5,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TradingView Multi-Chart</title>
     <style>
-        body { 
-            margin: 0; 
-            padding: 20px; 
-            font-family: Arial, sans-serif;
-            background: #1e222d;
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body { 
+            background: #1e222d;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
         .container { 
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-            height: calc(100vh - 40px);
+            gap: 10px;
+            height: 98vh;
         }
+
         .chart-container {
             border: 1px solid #363c4e;
             border-radius: 4px;
             padding: 10px;
-            height: 100%;
-            box-sizing: border-box;
             background: #131722;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Quan trọng cho flex container */
         }
+
         .controls {
-            margin-bottom: 10px;
             display: flex;
             gap: 10px;
+            padding: 5px 0;
+            min-height: 40px;
+            align-items: center;
         }
+
         select {
-            padding: 5px;
-            margin-right: 10px;
+            padding: 5px 10px;
             background: #2a2e39;
             color: #fff;
             border: 1px solid #363c4e;
             border-radius: 4px;
+            min-width: 120px;
+            height: 30px;
         }
+
         label {
-            margin-right: 5px;
             color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
+
         .chart-wrapper {
-            height: calc(100% - 50px);
+            flex: 1;
+            min-height: 0; /* Quan trọng cho flex item */
+            position: relative;
+        }
+
+        .tradingview-widget-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        #tradingview_1,
+        #tradingview_2,
+        #tradingview_3,
+        #tradingview_4 {
+            height: 100% !important;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .chart-container {
+                height: 80vh;
+            }
         }
     </style>
 </head>
@@ -55,7 +98,7 @@
             <div class="controls">
                 <div>
                     <label>Symbol:</label>
-                    <select id="symbol1" onchange="updateChart(1)">
+                    <select id="symbol1">
                         <option value="BINANCE:BTCUSDT">BTCUSDT</option>
                         <option value="BINANCE:ETHUSDT">ETHUSDT</option>
                         <option value="BINANCE:BNBUSDT">BNBUSDT</option>
@@ -67,7 +110,7 @@
                 </div>
                 <div>
                     <label>Interval:</label>
-                    <select id="interval1" onchange="updateChart(1)">
+                    <select id="interval1">
                         <option value="1">1m</option>
                         <option value="5">5m</option>
                         <option value="15">15m</option>
@@ -82,10 +125,11 @@
             <div id="chart1" class="chart-wrapper">
                 <!-- TradingView Widget BEGIN -->
                 <div class="tradingview-widget-container" style="height:100%;width:100%">
-                    <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-                    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-                    {
+                    <div id="tradingview_1"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                    <script>
+                    new TradingView.widget({
+                        "container_id": "tradingview_1",
                         "autosize": true,
                         "symbol": "BINANCE:BTCUSDT",
                         "interval": "60",
@@ -99,8 +143,8 @@
                         "studies": [
                             "RSI@tv-basicstudies"
                         ],
-                        "support_host": "https://www.tradingview.com"
-                    }
+                        "save_image": false,
+                    });
                     </script>
                 </div>
                 <!-- TradingView Widget END -->
@@ -112,7 +156,7 @@
             <div class="controls">
                 <div>
                     <label>Symbol:</label>
-                    <select id="symbol2" onchange="updateChart(2)">
+                    <select id="symbol2">
                         <option value="BINANCE:BTCUSDT">BTCUSDT</option>
                         <option value="BINANCE:ETHUSDT" selected>ETHUSDT</option>
                         <option value="BINANCE:BNBUSDT">BNBUSDT</option>
@@ -124,7 +168,7 @@
                 </div>
                 <div>
                     <label>Interval:</label>
-                    <select id="interval2" onchange="updateChart(2)">
+                    <select id="interval2">
                         <option value="1">1m</option>
                         <option value="5">5m</option>
                         <option value="15">15m</option>
@@ -139,10 +183,10 @@
             <div id="chart2" class="chart-wrapper">
                 <!-- TradingView Widget BEGIN -->
                 <div class="tradingview-widget-container" style="height:100%;width:100%">
-                    <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-                    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-                    {
+                    <div id="tradingview_2"></div>
+                    <script>
+                    new TradingView.widget({
+                        "container_id": "tradingview_2",
                         "autosize": true,
                         "symbol": "BINANCE:ETHUSDT",
                         "interval": "60",
@@ -156,8 +200,8 @@
                         "studies": [
                             "RSI@tv-basicstudies"
                         ],
-                        "support_host": "https://www.tradingview.com"
-                    }
+                        "save_image": false,
+                    });
                     </script>
                 </div>
                 <!-- TradingView Widget END -->
@@ -169,7 +213,7 @@
             <div class="controls">
                 <div>
                     <label>Symbol:</label>
-                    <select id="symbol3" onchange="updateChart(3)">
+                    <select id="symbol3">
                         <option value="BINANCE:BTCUSDT">BTCUSDT</option>
                         <option value="BINANCE:ETHUSDT">ETHUSDT</option>
                         <option value="BINANCE:BNBUSDT" selected>BNBUSDT</option>
@@ -181,7 +225,7 @@
                 </div>
                 <div>
                     <label>Interval:</label>
-                    <select id="interval3" onchange="updateChart(3)">
+                    <select id="interval3">
                         <option value="1">1m</option>
                         <option value="5">5m</option>
                         <option value="15">15m</option>
@@ -196,10 +240,10 @@
             <div id="chart3" class="chart-wrapper">
                 <!-- TradingView Widget BEGIN -->
                 <div class="tradingview-widget-container" style="height:100%;width:100%">
-                    <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-                    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-                    {
+                    <div id="tradingview_3"></div>
+                    <script>
+                    new TradingView.widget({
+                        "container_id": "tradingview_3",
                         "autosize": true,
                         "symbol": "BINANCE:BNBUSDT",
                         "interval": "60",
@@ -213,8 +257,8 @@
                         "studies": [
                             "RSI@tv-basicstudies"
                         ],
-                        "support_host": "https://www.tradingview.com"
-                    }
+                        "save_image": false,
+                    });
                     </script>
                 </div>
                 <!-- TradingView Widget END -->
@@ -226,7 +270,7 @@
             <div class="controls">
                 <div>
                     <label>Symbol:</label>
-                    <select id="symbol4" onchange="updateChart(4)">
+                    <select id="symbol4">
                         <option value="BINANCE:BTCUSDT">BTCUSDT</option>
                         <option value="BINANCE:ETHUSDT">ETHUSDT</option>
                         <option value="BINANCE:BNBUSDT">BNBUSDT</option>
@@ -238,7 +282,7 @@
                 </div>
                 <div>
                     <label>Interval:</label>
-                    <select id="interval4" onchange="updateChart(4)">
+                    <select id="interval4">
                         <option value="1">1m</option>
                         <option value="5">5m</option>
                         <option value="15">15m</option>
@@ -253,10 +297,10 @@
             <div id="chart4" class="chart-wrapper">
                 <!-- TradingView Widget BEGIN -->
                 <div class="tradingview-widget-container" style="height:100%;width:100%">
-                    <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-                    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-                    {
+                    <div id="tradingview_4"></div>
+                    <script>
+                    new TradingView.widget({
+                        "container_id": "tradingview_4",
                         "autosize": true,
                         "symbol": "BINANCE:SOLUSDT",
                         "interval": "60",
@@ -270,8 +314,8 @@
                         "studies": [
                             "RSI@tv-basicstudies"
                         ],
-                        "support_host": "https://www.tradingview.com"
-                    }
+                        "save_image": false,
+                    });
                     </script>
                 </div>
                 <!-- TradingView Widget END -->
@@ -280,38 +324,70 @@
     </div>
 
     <script>
-        function updateChart(chartId) {
+        let widgets = {};
+
+        function initializeWidget(chartId) {
             const symbol = document.getElementById(`symbol${chartId}`).value;
             const interval = document.getElementById(`interval${chartId}`).value;
-            const chartContainer = document.getElementById(`chart${chartId}`);
-            
-            chartContainer.innerHTML = `
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container" style="height:100%;width:100%">
-                    <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-                    <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-                    {
-                        "autosize": true,
-                        "symbol": "${symbol}",
-                        "interval": "${interval}",
-                        "timezone": "Asia/Ho_Chi_Minh",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "vi_VN",
-                        "enable_publishing": false,
-                        "hide_side_toolbar": false,
-                        "allow_symbol_change": true,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "support_host": "https://www.tradingview.com"
-                    }
-                </script>
-                </div>
-                <!-- TradingView Widget END -->
-            `;
+
+            widgets[chartId] = new TradingView.widget({
+                "container_id": `tradingview_${chartId}`,
+                "autosize": true,
+                "symbol": symbol,
+                "interval": interval,
+                "timezone": "Asia/Ho_Chi_Minh",
+                "theme": "dark",
+                "style": "1",
+                "locale": "vi_VN",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "allow_symbol_change": true,
+                "studies": [
+                    "RSI@tv-basicstudies"
+                ],
+                "save_image": false,
+            });
+
+            // Lắng nghe sự kiện thay đổi
+            document.getElementById(`symbol${chartId}`).addEventListener('change', function() {
+                updateSymbol(chartId);
+            });
+
+            document.getElementById(`interval${chartId}`).addEventListener('change', function() {
+                updateInterval(chartId);
+            });
         }
+
+        function updateSymbol(chartId) {
+            const newSymbol = document.getElementById(`symbol${chartId}`).value;
+            if (widgets[chartId] && widgets[chartId].iframe && widgets[chartId].iframe.contentWindow) {
+                widgets[chartId].iframe.contentWindow.postMessage({
+                    "name": "set-symbol",
+                    "data": {
+                        "symbol": newSymbol
+                    }
+                }, "*");
+            }
+        }
+
+        function updateInterval(chartId) {
+            const newInterval = document.getElementById(`interval${chartId}`).value;
+            if (widgets[chartId] && widgets[chartId].iframe && widgets[chartId].iframe.contentWindow) {
+                widgets[chartId].iframe.contentWindow.postMessage({
+                    "name": "set-interval",
+                    "data": {
+                        "interval": newInterval
+                    }
+                }, "*");
+            }
+        }
+
+        // Initialize all widgets when the page loads
+        window.addEventListener('load', function() {
+            for (let i = 1; i <= 4; i++) {
+                initializeWidget(i);
+            }
+        });
     </script>
 </body>
 </html>
