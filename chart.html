@@ -286,6 +286,124 @@ optgroup option {
             height: 100% !important;
         }
 
+          /* Thêm style cho search container */
+          .search-container {
+            position: relative;
+            margin-right: 15px;
+            min-width: 250px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 35px 8px 15px;
+            background: #2a2e39;
+            color: #fff;
+            border: 1px solid #363c4e;
+            border-radius: 4px;
+            height: 38px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #2962ff;
+            box-shadow: 0 0 0 2px rgba(41, 98, 255, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+
+        .symbol-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: #1e222d;
+            border: 1px solid #363c4e;
+            border-radius: 4px;
+            margin-top: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .symbol-item {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #fff;
+            border-bottom: 1px solid #363c4e;
+        }
+
+        .symbol-item:last-child {
+            border-bottom: none;
+        }
+
+        .symbol-item:hover {
+            background: #2a2e39;
+        }
+
+        .symbol-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #2a2e39;
+            border-radius: 50%;
+            font-size: 12px;
+            color: #2962ff;
+        }
+
+        .symbol-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .symbol-name {
+            font-weight: 500;
+        }
+
+        .symbol-fullname {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* Scrollbar cho dropdown */
+        .symbol-dropdown {
+            scrollbar-width: thin;
+            scrollbar-color: #363c4e #1e222d;
+        }
+
+        .symbol-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .symbol-dropdown::-webkit-scrollbar-track {
+            background: #1e222d;
+        }
+
+        .symbol-dropdown::-webkit-scrollbar-thumb {
+            background: #363c4e;
+            border-radius: 4px;
+        }
+
+        .symbol-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #4a5163;
+        }
+
         /* Responsive design */
         @media (max-width: 1400px) {
             .intervals-section {
@@ -341,7 +459,7 @@ optgroup option {
                     <optgroup label="Phút">
                         <option value="1">1 phút</option>
                         <option value="3">3 phút</option>
-                        <option value="5">5 phút</option>
+                        <option value="5" selected>5 phút</option>
                         <option value="15">15 phút</option>
                         <option value="30">30 phút</option>
                         <option value="45">45 phút</option>
@@ -376,143 +494,151 @@ optgroup option {
                 </select>
                 <select id="interval2">
                     <!-- Range -->
-                   <optgroup label="Phạm vi">
-                       <option value="1R">1 Range</option>
-                       <option value="10R">10 Range</option>
-                       <option value="100R">100 Range</option>
-                       <option value="1000R">1000 Range</option>
-                   </optgroup>
-
-                   <!-- Minutes -->
-                   <optgroup label="Phút">
-                       <option value="1">1 phút</option>
-                       <option value="3">3 phút</option>
-                       <option value="5">5 phút</option>
-                       <option value="15">15 phút</option>
-                       <option value="30">30 phút</option>
-                       <option value="45">45 phút</option>
-                   </optgroup>
-                   
-                   <!-- Hours -->
-                   <optgroup label="Giờ">
-                       <option value="60">1 giờ</option>
-                       <option value="120">2 giờ</option>
-                       <option value="180">3 giờ</option>
-                       <option value="240">4 giờ</option>
-                   </optgroup>
-                   
-                   <!-- Days -->
-                   <optgroup label="Ngày">
-                       <option value="D">1 ngày</option>
-                       <option value="3D">3 ngày</option>
-                   </optgroup>
-                   
-                   <!-- Weeks -->
-                   <optgroup label="Tuần">
-                       <option value="W">1 tuần</option>
-                   </optgroup>
-                   
-                   <!-- Months -->
-                   <optgroup label="Tháng">
-                       <option value="M">1 tháng</option>
-                       <option value="3M">3 tháng</option>
-                       <option value="6M">6 tháng</option>
-                       <option value="12M">12 tháng</option>
-                   </optgroup>
-               </select>
-               <select id="interval3">
-                <!-- Range -->
-               <optgroup label="Phạm vi">
-                   <option value="1R">1 Range</option>
-                   <option value="10R">10 Range</option>
-                   <option value="100R">100 Range</option>
-                   <option value="1000R">1000 Range</option>
-               </optgroup>
-
-               <!-- Minutes -->
-               <optgroup label="Phút">
-                   <option value="1">1 phút</option>
-                   <option value="3">3 phút</option>
-                   <option value="5">5 phút</option>
-                   <option value="15">15 phút</option>
-                   <option value="30">30 phút</option>
-                   <option value="45">45 phút</option>
-               </optgroup>
-               
-               <!-- Hours -->
-               <optgroup label="Giờ">
-                   <option value="60">1 giờ</option>
-                   <option value="120">2 giờ</option>
-                   <option value="180">3 giờ</option>
-                   <option value="240">4 giờ</option>
-               </optgroup>
-               
-               <!-- Days -->
-               <optgroup label="Ngày">
-                   <option value="D">1 ngày</option>
-                   <option value="3D">3 ngày</option>
-               </optgroup>
-               
-               <!-- Weeks -->
-               <optgroup label="Tuần">
-                   <option value="W">1 tuần</option>
-               </optgroup>
-               
-               <!-- Months -->
-               <optgroup label="Tháng">
-                   <option value="M">1 tháng</option>
-                   <option value="3M">3 tháng</option>
-                   <option value="6M">6 tháng</option>
-                   <option value="12M">12 tháng</option>
-               </optgroup>
-           </select>
-           <select id="interval4">
-            <!-- Range -->
-           <optgroup label="Phạm vi">
-               <option value="1R">1 Range</option>
-               <option value="10R">10 Range</option>
-               <option value="100R">100 Range</option>
-               <option value="1000R">1000 Range</option>
-           </optgroup>
-
-           <!-- Minutes -->
-           <optgroup label="Phút">
-               <option value="1">1 phút</option>
-               <option value="3">3 phút</option>
-               <option value="5">5 phút</option>
-               <option value="15">15 phút</option>
-               <option value="30">30 phút</option>
-               <option value="45">45 phút</option>
-           </optgroup>
-           
-           <!-- Hours -->
-           <optgroup label="Giờ">
-               <option value="60">1 giờ</option>
-               <option value="120">2 giờ</option>
-               <option value="180">3 giờ</option>
-               <option value="240">4 giờ</option>
-           </optgroup>
-           
-           <!-- Days -->
-           <optgroup label="Ngày">
-               <option value="D">1 ngày</option>
-               <option value="3D">3 ngày</option>
-           </optgroup>
-           
-           <!-- Weeks -->
-           <optgroup label="Tuần">
-               <option value="W">1 tuần</option>
-           </optgroup>
-           
-           <!-- Months -->
-           <optgroup label="Tháng">
-               <option value="M">1 tháng</option>
-               <option value="3M">3 tháng</option>
-               <option value="6M">6 tháng</option>
-               <option value="12M">12 tháng</option>
-           </optgroup>
-       </select>
+                    <optgroup label="Phạm vi">
+                        <option value="1R">1 Range</option>
+                        <option value="10R">10 Range</option>
+                        <option value="100R">100 Range</option>
+                        <option value="1000R">1000 Range</option>
+                    </optgroup>
+                
+                    <!-- Minutes -->
+                    <optgroup label="Phút">
+                        <option value="1">1 phút</option>
+                        <option value="3">3 phút</option>
+                        <option value="5">5 phút</option>
+                        <option value="15">15 phút</option>
+                        <option value="30">30 phút</option>
+                        <option value="45">45 phút</option>
+                    </optgroup>
+                    
+                    <!-- Hours -->
+                    <optgroup label="Giờ">
+                        <option value="60">1 giờ</option>
+                        <option value="120">2 giờ</option>
+                        <option value="180">3 giờ</option>
+                        <option value="240" selected>4 giờ</option>  <!-- Chỉ để selected ở đây -->
+                    </optgroup>
+                    
+                    <!-- Days -->
+                    <optgroup label="Ngày">
+                        <option value="D">1 ngày</option>
+                        <option value="3D">3 ngày</option>
+                    </optgroup>
+                    
+                    <!-- Weeks -->
+                    <optgroup label="Tuần">
+                        <option value="W">1 tuần</option>
+                    </optgroup>
+                    
+                    <!-- Months -->
+                    <optgroup label="Tháng">
+                        <option value="M">1 tháng</option>
+                        <option value="3M">3 tháng</option>
+                        <option value="6M">6 tháng</option>
+                        <option value="12M">12 tháng</option>
+                    </optgroup>
+                </select>
+                <select id="interval3">
+                    <!-- Range -->
+                    <optgroup label="Phạm vi">
+                        <option value="1R">1 Range</option>
+                        <option value="10R">10 Range</option>
+                        <option value="100R">100 Range</option>
+                        <option value="1000R">1000 Range</option>
+                    </optgroup>
+                
+                    <!-- Minutes -->
+                    <optgroup label="Phút">
+                        <option value="1">1 phút</option>
+                        <option value="3">3 phút</option>
+                        <option value="5">5 phút</option>
+                        <option value="15">15 phút</option>
+                        <option value="30">30 phút</option>
+                        <option value="45">45 phút</option>
+                    </optgroup>
+                    
+                    <!-- Hours -->
+                    <optgroup label="Giờ">
+                        <option value="60">1 giờ</option>
+                        <option value="120">2 giờ</option>
+                        <option value="180">3 giờ</option>
+                        <option value="240">4 giờ</option>
+                    </optgroup>
+                    
+                    <!-- Days -->
+                    <optgroup label="Ngày">
+                        <option value="D" selected>1 ngày</option>  <!-- Chỉ để selected ở đây -->
+                        <option value="3D">3 ngày</option>
+                    </optgroup>
+                    
+                    <!-- Weeks -->
+                    <optgroup label="Tuần">
+                        <option value="W">1 tuần</option>
+                    </optgroup>
+                    
+                    <!-- Months -->
+                    <optgroup label="Tháng">
+                        <option value="M">1 tháng</option>
+                        <option value="3M">3 tháng</option>
+                        <option value="6M">6 tháng</option>
+                        <option value="12M">12 tháng</option>
+                    </optgroup>
+                </select>
+                <select id="interval4">
+                    <!-- Range -->
+                    <optgroup label="Phạm vi">
+                        <option value="1R">1 Range</option>
+                        <option value="10R">10 Range</option>
+                        <option value="100R">100 Range</option>
+                        <option value="1000R">1000 Range</option>
+                    </optgroup>
+                
+                    <!-- Minutes -->
+                    <optgroup label="Phút">
+                        <option value="1">1 phút</option>
+                        <option value="3">3 phút</option>
+                        <option value="5">5 phút</option>
+                        <option value="15">15 phút</option>
+                        <option value="30">30 phút</option>
+                        <option value="45">45 phút</option>
+                    </optgroup>
+                    
+                    <!-- Hours -->
+                    <optgroup label="Giờ">
+                        <option value="60">1 giờ</option>
+                        <option value="120">2 giờ</option>
+                        <option value="180">3 giờ</option>
+                        <option value="240">4 giờ</option>
+                    </optgroup>
+                    
+                    <!-- Days -->
+                    <optgroup label="Ngày">
+                        <option value="D">1 ngày</option>
+                        <option value="3D">3 ngày</option>
+                    </optgroup>
+                    
+                    <!-- Weeks -->
+                    <optgroup label="Tuần">
+                        <option value="W">1 tuần</option>
+                    </optgroup>
+                    
+                    <!-- Months -->
+                    <optgroup label="Tháng">
+                        <option value="M">1 tháng</option>
+                        <option value="3M">3 tháng</option>
+                        <option value="6M">6 tháng</option>
+                        <option value="12M" selected>12 tháng</option>  <!-- Chỉ để selected ở đây -->
+                    </optgroup>
+                </select>
        <button class="apply-button" onclick="applyChanges()">Apply Changes</button>
+       <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search symbol...">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <div class="symbol-dropdown"></div>
+    </div>
             </div>
         </div>
         <!-- <div class="control-group">
@@ -651,21 +777,113 @@ optgroup option {
             }
         }
 
-        // Initialize everything when page loads
-        window.addEventListener('load', function() {
-            fetchBinanceSymbols();
-            
-            // Copy interval options to all selects
-            const interval1Options = document.getElementById('interval1').innerHTML;
-            document.getElementById('interval2').innerHTML = interval1Options;
-            document.getElementById('interval3').innerHTML = interval1Options;
-            document.getElementById('interval4').innerHTML = interval1Options;
-            
-            // Initialize all charts
-            for (let i = 1; i <= 4; i++) {
-                initializeWidget(i);
-            }
-        });
+        // Thay đổi phần khởi tạo trong window.addEventListener('load')
+window.addEventListener('load', function() {
+    fetchBinanceSymbols();
+    
+    // Thay vì copy options, ta sẽ set selected value trực tiếp
+    document.getElementById('interval1').value = '5'; // 5 phút
+    document.getElementById('interval2').value = '240'; // 4 giờ
+    document.getElementById('interval3').value = 'D'; // 1 ngày
+    document.getElementById('interval4').value = '12M'; // 12 tháng
+    
+    // Initialize all charts
+    for (let i = 1; i <= 4; i++) {
+        initializeWidget(i);
+    }
+});
     </script>
+    <script>
+    // Thêm vào đầu file JavaScript
+    const symbolIcons = {
+        'BTC': '₿',
+        'ETH': 'Ξ',
+        'BNB': 'BNB',
+        'SOL': 'SOL',
+        'DOGE': 'Ð',
+        'MATIC': 'MATIC',
+        'ADA': 'ADA'
+    };
+
+    const searchInput = document.querySelector('.search-input');
+    const symbolDropdown = document.querySelector('.symbol-dropdown');
+    const globalSymbolSelect = document.getElementById('global-symbol');
+
+    // Sửa lại hàm fetchBinanceSymbols
+    async function fetchBinanceSymbols() {
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            const data = await response.json();
+            allBinanceSymbols = data.symbols
+                .filter(symbol => symbol.quoteAsset === 'USDT')
+                .map(symbol => ({
+                    symbol: `BINANCE:${symbol.symbol}`,
+                    baseAsset: symbol.baseAsset,
+                    displaySymbol: symbol.symbol,
+                }));
+            
+            // Populate initial options
+            updateSymbolDropdown('');
+            
+            // Populate hidden select
+            globalSymbolSelect.innerHTML = allBinanceSymbols
+                .map(s => `<option value="${s.symbol}">${s.displaySymbol}</option>`)
+                .join('');
+        } catch (error) {
+            console.error('Error fetching Binance symbols:', error);
+        }
+    }
+
+    function updateSymbolDropdown(searchTerm) {
+        symbolDropdown.innerHTML = '';
+        const filteredSymbols = allBinanceSymbols.filter(s => 
+            s.displaySymbol.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        filteredSymbols.slice(0, 100).forEach(symbol => {
+            const baseAsset = symbol.baseAsset;
+            const icon = symbolIcons[baseAsset] || baseAsset.slice(0, 3);
+            
+            const item = document.createElement('div');
+            item.className = 'symbol-item';
+            item.innerHTML = `
+                <span class="symbol-icon">${icon}</span>
+                <div class="symbol-details">
+                    <span class="symbol-name">${symbol.displaySymbol}</span>
+                    <span class="symbol-fullname">${baseAsset}</span>
+                </div>
+            `;
+            
+            item.onclick = () => {
+                searchInput.value = symbol.displaySymbol;
+                globalSymbolSelect.value = symbol.symbol;
+                symbolDropdown.style.display = 'none';
+                applyChanges();
+            };
+            
+            symbolDropdown.appendChild(item);
+        });
+    }
+
+    // Event listeners cho search
+    searchInput.addEventListener('focus', () => {
+        updateSymbolDropdown(searchInput.value);
+        symbolDropdown.style.display = 'block';
+    });
+
+    searchInput.addEventListener('input', () => {
+        updateSymbolDropdown(searchInput.value);
+        symbolDropdown.style.display = 'block';
+    });
+
+    // Click outside to close dropdown
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-container')) {
+            symbolDropdown.style.display = 'none';
+        }
+    });
+
+    // Giữ nguyên các hàm khác
+</script>
 </body>
 </html>
