@@ -5,25 +5,253 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TradingView Multi-Chart</title>
     <style>
-          * {
+        /* Reset CSS */
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
+        /* Body and main layout */
         body { 
             background: #1e222d;
             min-height: 100vh;
-            padding: 10px;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* Top control panel */
+        .top-controls {
+            background: #131722;
+            border-bottom: 1px solid #363c4e;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* Control groups layout */
+        .control-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            /* margin-bottom: 15px; */
+            flex-wrap: wrap;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Symbol section */
+        .symbol-section {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Intervals section */
+        .intervals-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .interval-control {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Select styles */
+        select {
+            padding: 8px 15px;
+            background: #2a2e39;
+            color: #fff;
+            border: 1px solid #363c4e;
+            border-radius: 4px;
+            min-width: 150px;
+            height: 38px;
+            cursor: pointer;
+            outline: none;
+            font-size: 14px;
+        }
+
+        select:hover {
+            border-color: #4a5163;
+        }
+
+        select:focus {
+            border-color: #2962ff;
+        }
+
+        /* Option group styles */
+        optgroup {
+            background: #1e222d;
+            font-weight: bold;
+        }
+
+        option {
+            background: #2a2e39;
+            padding: 8px;
+        }
+/* Custom scrollbar styles */
+select {
+    scrollbar-width: thin;
+    scrollbar-color: #363c4e #1e222d;
+}
+
+/* Webkit browsers (Chrome, Safari, newer Edge) */
+select::-webkit-scrollbar {
+    width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+    background: #1e222d;
+    border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb {
+    background: #363c4e;
+    border-radius: 4px;
+    border: 2px solid #1e222d;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+    background: #4a5163;
+}
+
+/* Custom select dropdown styles */
+select option {
+    padding: 10px 15px;
+    border-bottom: 1px solid #2a2e39;
+}
+
+select option:last-child {
+    border-bottom: none;
+}
+
+select optgroup {
+    color: #9ca3af;
+    font-size: 12px;
+    padding: 5px 0;
+}
+
+select option:hover,
+select option:focus {
+    background-color: #2962ff !important;
+    color: white;
+}
+
+/* Enhance select appearance */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+select:focus {
+    box-shadow: 0 0 0 2px rgba(41, 98, 255, 0.2);
+}
+
+/* Enhance dropdown list appearance */
+select option {
+    background: #2a2e39;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+select option:checked {
+    background: #2962ff linear-gradient(0deg, #2962ff 0%, #2962ff 100%);
+    color: white;
+}
+
+/* Firefox specific styles */
+@-moz-document url-prefix() {
+    select {
+        scrollbar-width: thin;
+        scrollbar-color: #363c4e #1e222d;
+    }
+    
+    select:focus {
+        border-color: #2962ff;
+        box-shadow: 0 0 0 2px rgba(41, 98, 255, 0.2);
+    }
+}
+
+/* Container for select to manage max-height */
+select {
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Enhanced optgroup styling */
+optgroup {
+    background: #1e222d;
+    color: #9ca3af;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-bottom: 1px solid #363c4e;
+}
+
+optgroup:first-of-type {
+    border-top: none;
+}
+
+optgroup option {
+    padding-left: 20px;
+    font-weight: normal;
+}
+        /* Labels */
+        label {
+            color: #fff;
+            font-weight: 500;
+            font-size: 14px;
+            min-width: 70px;
+        }
+
+        /* Apply button */
+        .apply-button {
+            padding: 8px 24px;
+            background: #2962ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            height: 38px;
+            transition: background 0.3s;
+        }
+
+        .apply-button:hover {
+            background: #1e4bd8;
+        }
+
+        .apply-button:active {
+            background: #1939b7;
+        }
+
+        /* Charts container */
         .container { 
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            height: 98vh;
+            padding: 10px;
+            flex: 1;
         }
 
+        /* Individual chart container */
         .chart-container {
             border: 1px solid #363c4e;
             border-radius: 4px;
@@ -31,35 +259,14 @@
             background: #131722;
             display: flex;
             flex-direction: column;
-            min-height: 0; /* Quan trọng cho flex container */
+            min-height: 0;
+            height: calc(50vh - 20px);
         }
 
-        .controls {
-            display: flex;
-            gap: 10px;
-            padding: 5px 0;
-            min-height: 40px;
-            align-items: center;
-        }
-
-        select {
-            padding: 5px 10px;
-            background: #2a2e39;
-            color: #fff;
-            border: 1px solid #363c4e;
-            border-radius: 4px;
-            min-width: 120px;
-            height: 30px;
-        }
-
-        label {
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
+        /* Chart wrapper */
         .chart-wrapper {
             flex: 1;
-            min-height: 0; /* Quan trọng cho flex item */
+            min-height: 0;
             position: relative;
         }
 
@@ -71,6 +278,7 @@
             bottom: 0;
         }
 
+        /* TradingView chart elements */
         #tradingview_1,
         #tradingview_2,
         #tradingview_3,
@@ -78,312 +286,382 @@
             height: 100% !important;
         }
 
-        /* Responsive adjustments */
+        /* Responsive design */
+        @media (max-width: 1400px) {
+            .intervals-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
         @media (max-width: 1200px) {
             .container {
                 grid-template-columns: 1fr;
-                height: auto;
             }
 
             .chart-container {
-                height: 80vh;
+                height: 70vh;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .symbol-section {
+                flex-wrap: wrap;
             }
         }
     </style>
 </head>
 <body>
+    <div class="top-controls">
+        <div class="control-group">
+            <div class="symbol-section">
+                <label>Symbol:</label>
+                <select id="global-symbol">
+                    <option value="BINANCE:BTCUSDT">BTCUSDT</option>
+                    <option value="BINANCE:ETHUSDT">ETHUSDT</option>
+                    <option value="BINANCE:BNBUSDT">BNBUSDT</option>
+                    <option value="BINANCE:SOLUSDT">SOLUSDT</option>
+                    <option value="BINANCE:DOGEUSDT">DOGEUSDT</option>
+                    <option value="BINANCE:MATICUSDT">MATICUSDT</option>
+                    <option value="BINANCE:ADAUSDT">ADAUSDT</option>
+                </select>
+                <select id="interval1">
+                    <!-- Range -->
+                    <optgroup label="Phạm vi">
+                        <option value="1R">1 Range</option>
+                        <option value="10R">10 Range</option>
+                        <option value="100R">100 Range</option>
+                        <option value="1000R">1000 Range</option>
+                    </optgroup>
+
+                    <!-- Minutes -->
+                    <optgroup label="Phút">
+                        <option value="1">1 phút</option>
+                        <option value="3">3 phút</option>
+                        <option value="5">5 phút</option>
+                        <option value="15">15 phút</option>
+                        <option value="30">30 phút</option>
+                        <option value="45">45 phút</option>
+                    </optgroup>
+                    
+                    <!-- Hours -->
+                    <optgroup label="Giờ">
+                        <option value="60">1 giờ</option>
+                        <option value="120">2 giờ</option>
+                        <option value="180">3 giờ</option>
+                        <option value="240">4 giờ</option>
+                    </optgroup>
+                    
+                    <!-- Days -->
+                    <optgroup label="Ngày">
+                        <option value="D">1 ngày</option>
+                        <option value="3D">3 ngày</option>
+                    </optgroup>
+                    
+                    <!-- Weeks -->
+                    <optgroup label="Tuần">
+                        <option value="W">1 tuần</option>
+                    </optgroup>
+                    
+                    <!-- Months -->
+                    <optgroup label="Tháng">
+                        <option value="M">1 tháng</option>
+                        <option value="3M">3 tháng</option>
+                        <option value="6M">6 tháng</option>
+                        <option value="12M">12 tháng</option>
+                    </optgroup>
+                </select>
+                <select id="interval2">
+                    <!-- Range -->
+                   <optgroup label="Phạm vi">
+                       <option value="1R">1 Range</option>
+                       <option value="10R">10 Range</option>
+                       <option value="100R">100 Range</option>
+                       <option value="1000R">1000 Range</option>
+                   </optgroup>
+
+                   <!-- Minutes -->
+                   <optgroup label="Phút">
+                       <option value="1">1 phút</option>
+                       <option value="3">3 phút</option>
+                       <option value="5">5 phút</option>
+                       <option value="15">15 phút</option>
+                       <option value="30">30 phút</option>
+                       <option value="45">45 phút</option>
+                   </optgroup>
+                   
+                   <!-- Hours -->
+                   <optgroup label="Giờ">
+                       <option value="60">1 giờ</option>
+                       <option value="120">2 giờ</option>
+                       <option value="180">3 giờ</option>
+                       <option value="240">4 giờ</option>
+                   </optgroup>
+                   
+                   <!-- Days -->
+                   <optgroup label="Ngày">
+                       <option value="D">1 ngày</option>
+                       <option value="3D">3 ngày</option>
+                   </optgroup>
+                   
+                   <!-- Weeks -->
+                   <optgroup label="Tuần">
+                       <option value="W">1 tuần</option>
+                   </optgroup>
+                   
+                   <!-- Months -->
+                   <optgroup label="Tháng">
+                       <option value="M">1 tháng</option>
+                       <option value="3M">3 tháng</option>
+                       <option value="6M">6 tháng</option>
+                       <option value="12M">12 tháng</option>
+                   </optgroup>
+               </select>
+               <select id="interval3">
+                <!-- Range -->
+               <optgroup label="Phạm vi">
+                   <option value="1R">1 Range</option>
+                   <option value="10R">10 Range</option>
+                   <option value="100R">100 Range</option>
+                   <option value="1000R">1000 Range</option>
+               </optgroup>
+
+               <!-- Minutes -->
+               <optgroup label="Phút">
+                   <option value="1">1 phút</option>
+                   <option value="3">3 phút</option>
+                   <option value="5">5 phút</option>
+                   <option value="15">15 phút</option>
+                   <option value="30">30 phút</option>
+                   <option value="45">45 phút</option>
+               </optgroup>
+               
+               <!-- Hours -->
+               <optgroup label="Giờ">
+                   <option value="60">1 giờ</option>
+                   <option value="120">2 giờ</option>
+                   <option value="180">3 giờ</option>
+                   <option value="240">4 giờ</option>
+               </optgroup>
+               
+               <!-- Days -->
+               <optgroup label="Ngày">
+                   <option value="D">1 ngày</option>
+                   <option value="3D">3 ngày</option>
+               </optgroup>
+               
+               <!-- Weeks -->
+               <optgroup label="Tuần">
+                   <option value="W">1 tuần</option>
+               </optgroup>
+               
+               <!-- Months -->
+               <optgroup label="Tháng">
+                   <option value="M">1 tháng</option>
+                   <option value="3M">3 tháng</option>
+                   <option value="6M">6 tháng</option>
+                   <option value="12M">12 tháng</option>
+               </optgroup>
+           </select>
+           <select id="interval4">
+            <!-- Range -->
+           <optgroup label="Phạm vi">
+               <option value="1R">1 Range</option>
+               <option value="10R">10 Range</option>
+               <option value="100R">100 Range</option>
+               <option value="1000R">1000 Range</option>
+           </optgroup>
+
+           <!-- Minutes -->
+           <optgroup label="Phút">
+               <option value="1">1 phút</option>
+               <option value="3">3 phút</option>
+               <option value="5">5 phút</option>
+               <option value="15">15 phút</option>
+               <option value="30">30 phút</option>
+               <option value="45">45 phút</option>
+           </optgroup>
+           
+           <!-- Hours -->
+           <optgroup label="Giờ">
+               <option value="60">1 giờ</option>
+               <option value="120">2 giờ</option>
+               <option value="180">3 giờ</option>
+               <option value="240">4 giờ</option>
+           </optgroup>
+           
+           <!-- Days -->
+           <optgroup label="Ngày">
+               <option value="D">1 ngày</option>
+               <option value="3D">3 ngày</option>
+           </optgroup>
+           
+           <!-- Weeks -->
+           <optgroup label="Tuần">
+               <option value="W">1 tuần</option>
+           </optgroup>
+           
+           <!-- Months -->
+           <optgroup label="Tháng">
+               <option value="M">1 tháng</option>
+               <option value="3M">3 tháng</option>
+               <option value="6M">6 tháng</option>
+               <option value="12M">12 tháng</option>
+           </optgroup>
+       </select>
+       <button class="apply-button" onclick="applyChanges()">Apply Changes</button>
+            </div>
+        </div>
+        <!-- <div class="control-group">
+            <div class="intervals-section">
+                <div class="interval-control">
+                   
+                    
+                </div>
+                <div class="interval-control">
+                    
+                   
+                </div>
+                <div class="interval-control">
+                   
+                   
+                </div>
+                <div class="interval-control">
+                   
+                    
+                </div>
+                
+            </div> -->
+        </div>
+    </div>
+
     <div class="container">
         <!-- Chart 1 -->
         <div class="chart-container">
-            <div class="controls">
-                <div>
-                    <label>Symbol:</label>
-                    <select id="symbol1">
-                        <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                        <option value="BINANCE:ETHUSDT">ETHUSDT</option>
-                        <option value="BINANCE:BNBUSDT">BNBUSDT</option>
-                        <option value="BINANCE:SOLUSDT">SOLUSDT</option>
-                        <option value="BINANCE:DOGEUSDT">DOGEUSDT</option>
-                        <option value="BINANCE:MATICUSDT">MATICUSDT</option>
-                        <option value="BINANCE:ADAUSDT">ADAUSDT</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Interval:</label>
-                    <select id="interval1">
-                        <option value="1">1m</option>
-                        <option value="5">5m</option>
-                        <option value="15">15m</option>
-                        <option value="30">30m</option>
-                        <option value="60">1h</option>
-                        <option value="240">4h</option>
-                        <option value="D">1d</option>
-                        <option value="W">1w</option>
-                    </select>
-                </div>
-            </div>
-            <div id="chart1" class="chart-wrapper">
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="chart-wrapper">
+                <div class="tradingview-widget-container">
                     <div id="tradingview_1"></div>
-                    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-                    <script>
-                    new TradingView.widget({
-                        "container_id": "tradingview_1",
-                        "autosize": true,
-                        "symbol": "BINANCE:BTCUSDT",
-                        "interval": "60",
-                        "timezone": "Asia/Ho_Chi_Minh",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "vi_VN",
-                        "enable_publishing": false,
-                        "hide_side_toolbar": false,
-                        "allow_symbol_change": true,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "save_image": false,
-                    });
-                    </script>
                 </div>
-                <!-- TradingView Widget END -->
             </div>
         </div>
 
         <!-- Chart 2 -->
         <div class="chart-container">
-            <div class="controls">
-                <div>
-                    <label>Symbol:</label>
-                    <select id="symbol2">
-                        <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                        <option value="BINANCE:ETHUSDT" selected>ETHUSDT</option>
-                        <option value="BINANCE:BNBUSDT">BNBUSDT</option>
-                        <option value="BINANCE:SOLUSDT">SOLUSDT</option>
-                        <option value="BINANCE:DOGEUSDT">DOGEUSDT</option>
-                        <option value="BINANCE:MATICUSDT">MATICUSDT</option>
-                        <option value="BINANCE:ADAUSDT">ADAUSDT</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Interval:</label>
-                    <select id="interval2">
-                        <option value="1">1m</option>
-                        <option value="5">5m</option>
-                        <option value="15">15m</option>
-                        <option value="30">30m</option>
-                        <option value="60" selected>1h</option>
-                        <option value="240">4h</option>
-                        <option value="D">1d</option>
-                        <option value="W">1w</option>
-                    </select>
-                </div>
-            </div>
-            <div id="chart2" class="chart-wrapper">
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="chart-wrapper">
+                <div class="tradingview-widget-container">
                     <div id="tradingview_2"></div>
-                    <script>
-                    new TradingView.widget({
-                        "container_id": "tradingview_2",
-                        "autosize": true,
-                        "symbol": "BINANCE:ETHUSDT",
-                        "interval": "60",
-                        "timezone": "Asia/Ho_Chi_Minh",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "vi_VN",
-                        "enable_publishing": false,
-                        "hide_side_toolbar": false,
-                        "allow_symbol_change": true,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "save_image": false,
-                    });
-                    </script>
                 </div>
-                <!-- TradingView Widget END -->
             </div>
         </div>
 
         <!-- Chart 3 -->
         <div class="chart-container">
-            <div class="controls">
-                <div>
-                    <label>Symbol:</label>
-                    <select id="symbol3">
-                        <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                        <option value="BINANCE:ETHUSDT">ETHUSDT</option>
-                        <option value="BINANCE:BNBUSDT" selected>BNBUSDT</option>
-                        <option value="BINANCE:SOLUSDT">SOLUSDT</option>
-                        <option value="BINANCE:DOGEUSDT">DOGEUSDT</option>
-                        <option value="BINANCE:MATICUSDT">MATICUSDT</option>
-                        <option value="BINANCE:ADAUSDT">ADAUSDT</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Interval:</label>
-                    <select id="interval3">
-                        <option value="1">1m</option>
-                        <option value="5">5m</option>
-                        <option value="15">15m</option>
-                        <option value="30">30m</option>
-                        <option value="60" selected>1h</option>
-                        <option value="240">4h</option>
-                        <option value="D">1d</option>
-                        <option value="W">1w</option>
-                    </select>
-                </div>
-            </div>
-            <div id="chart3" class="chart-wrapper">
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="chart-wrapper">
+                <div class="tradingview-widget-container">
                     <div id="tradingview_3"></div>
-                    <script>
-                    new TradingView.widget({
-                        "container_id": "tradingview_3",
-                        "autosize": true,
-                        "symbol": "BINANCE:BNBUSDT",
-                        "interval": "60",
-                        "timezone": "Asia/Ho_Chi_Minh",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "vi_VN",
-                        "enable_publishing": false,
-                        "hide_side_toolbar": false,
-                        "allow_symbol_change": true,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "save_image": false,
-                    });
-                    </script>
                 </div>
-                <!-- TradingView Widget END -->
             </div>
         </div>
 
         <!-- Chart 4 -->
         <div class="chart-container">
-            <div class="controls">
-                <div>
-                    <label>Symbol:</label>
-                    <select id="symbol4">
-                        <option value="BINANCE:BTCUSDT">BTCUSDT</option>
-                        <option value="BINANCE:ETHUSDT">ETHUSDT</option>
-                        <option value="BINANCE:BNBUSDT">BNBUSDT</option>
-                        <option value="BINANCE:SOLUSDT" selected>SOLUSDT</option>
-                        <option value="BINANCE:DOGEUSDT">DOGEUSDT</option>
-                        <option value="BINANCE:MATICUSDT">MATICUSDT</option>
-                        <option value="BINANCE:ADAUSDT">ADAUSDT</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Interval:</label>
-                    <select id="interval4">
-                        <option value="1">1m</option>
-                        <option value="5">5m</option>
-                        <option value="15">15m</option>
-                        <option value="30">30m</option>
-                        <option value="60" selected>1h</option>
-                        <option value="240">4h</option>
-                        <option value="D">1d</option>
-                        <option value="W">1w</option>
-                    </select>
-                </div>
-            </div>
-            <div id="chart4" class="chart-wrapper">
-                <!-- TradingView Widget BEGIN -->
-                <div class="tradingview-widget-container" style="height:100%;width:100%">
+            <div class="chart-wrapper">
+                <div class="tradingview-widget-container">
                     <div id="tradingview_4"></div>
-                    <script>
-                    new TradingView.widget({
-                        "container_id": "tradingview_4",
-                        "autosize": true,
-                        "symbol": "BINANCE:SOLUSDT",
-                        "interval": "60",
-                        "timezone": "Asia/Ho_Chi_Minh",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "vi_VN",
-                        "enable_publishing": false,
-                        "hide_side_toolbar": false,
-                        "allow_symbol_change": true,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "save_image": false,
-                    });
-                    </script>
                 </div>
-                <!-- TradingView Widget END -->
             </div>
         </div>
     </div>
 
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <script>
         let widgets = {};
+        let allBinanceSymbols = [];
+
+        // Fetch Binance symbols
+        async function fetchBinanceSymbols() {
+            try {
+                const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+                const data = await response.json();
+                allBinanceSymbols = data.symbols
+                    .filter(symbol => symbol.quoteAsset === 'USDT')
+                    .map(symbol => `BINANCE:${symbol.symbol}`);
+                
+                // Populate symbol select
+                const symbolSelect = document.getElementById('global-symbol');
+                symbolSelect.innerHTML = allBinanceSymbols
+                    .map(symbol => `<option value="${symbol}">${symbol.replace('BINANCE:', '')}</option>`)
+                    .join('');
+            } catch (error) {
+                console.error('Error fetching Binance symbols:', error);
+            }
+        }
 
         function initializeWidget(chartId) {
-            const symbol = document.getElementById(`symbol${chartId}`).value;
-            const interval = document.getElementById(`interval${chartId}`).value;
-
-            widgets[chartId] = new TradingView.widget({
-                "container_id": `tradingview_${chartId}`,
-                "autosize": true,
-                "symbol": symbol,
-                "interval": interval,
-                "timezone": "Asia/Ho_Chi_Minh",
-                "theme": "dark",
-                "style": "1",
-                "locale": "vi_VN",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "studies": [
-                    "RSI@tv-basicstudies"
-                ],
-                "save_image": false,
-            });
-
-            // Lắng nghe sự kiện thay đổi
-            document.getElementById(`symbol${chartId}`).addEventListener('change', function() {
-                updateSymbol(chartId);
-            });
-
-            document.getElementById(`interval${chartId}`).addEventListener('change', function() {
-                updateInterval(chartId);
-            });
-        }
-
-        function updateSymbol(chartId) {
-            const newSymbol = document.getElementById(`symbol${chartId}`).value;
-            if (widgets[chartId] && widgets[chartId].iframe && widgets[chartId].iframe.contentWindow) {
-                widgets[chartId].iframe.contentWindow.postMessage({
-                    "name": "set-symbol",
-                    "data": {
-                        "symbol": newSymbol
-                    }
-                }, "*");
+            const container = document.getElementById(`tradingview_${chartId}`);
+            if (container) {
+                const symbol = document.getElementById('global-symbol').value;
+                const interval = document.getElementById(`interval${chartId}`).value;
+                
+                widgets[chartId] = new TradingView.widget({
+                    "container_id": `tradingview_${chartId}`,
+                    "autosize": true,
+                    "symbol": symbol,
+                    "interval": interval,
+                    "timezone": "Asia/Ho_Chi_Minh",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "vi_VN",
+                    "enable_publishing": false,
+                    "hide_side_toolbar": false,
+                    "allow_symbol_change": true,
+                    "studies": [
+                        "RSI@tv-basicstudies"
+                    ],
+                    "save_image": false,
+                });
             }
         }
 
-        function updateInterval(chartId) {
-            const newInterval = document.getElementById(`interval${chartId}`).value;
-            if (widgets[chartId] && widgets[chartId].iframe && widgets[chartId].iframe.contentWindow) {
-                widgets[chartId].iframe.contentWindow.postMessage({
-                    "name": "set-interval",
-                    "data": {
-                        "interval": newInterval
-                    }
-                }, "*");
+        function applyChanges() {
+            const symbol = document.getElementById('global-symbol').value;
+            
+            for (let i = 1; i <= 4; i++) {
+                const interval = document.getElementById(`interval${i}`).value;
+                if (widgets[i] && widgets[i].iframe && widgets[i].iframe.contentWindow) {
+                    // Update symbol
+                    widgets[i].iframe.contentWindow.postMessage({
+                        "name": "set-symbol",
+                        "data": {
+                            "symbol": symbol
+                        }
+                    }, "*");
+                    
+                    // Update interval
+                    widgets[i].iframe.contentWindow.postMessage({
+                        "name": "set-interval",
+                        "data": {
+                            "interval": interval
+                        }
+                    }, "*");
+                }
             }
         }
 
-        // Initialize all widgets when the page loads
+        // Initialize everything when page loads
         window.addEventListener('load', function() {
+            fetchBinanceSymbols();
+            
+            // Copy interval options to all selects
+            const interval1Options = document.getElementById('interval1').innerHTML;
+            document.getElementById('interval2').innerHTML = interval1Options;
+            document.getElementById('interval3').innerHTML = interval1Options;
+            document.getElementById('interval4').innerHTML = interval1Options;
+            
+            // Initialize all charts
             for (let i = 1; i <= 4; i++) {
                 initializeWidget(i);
             }
