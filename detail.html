@@ -166,13 +166,30 @@
     flex-direction: column;
     height: calc(50vh - 50px); /* Đảm bảo 4 chart vừa màn hình */
 }
-        .chart-header {
-            margin-bottom: 10px;
-        }
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #262626;
+    border-radius: 4px;
+}
+.chart-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.symbol-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #F0B90B;  /* Màu vàng Binance */
+}
 
         .time-filters {
             display: flex;
-            gap: 3px;
+    gap: 4px;
         }
 
         .time-filter {
@@ -311,6 +328,9 @@
     <template id="chart-template">
         <div class="chart-container">
             <div class="chart-header">
+                <div class="chart-title">
+                    <span class="symbol-name">BTC/USDT</span>
+                </div>
                 <div class="time-filters">
                     <button class="time-filter" data-period="MINUTE_15">15m</button>
                     <button class="time-filter" data-period="MINUTE_30">30m</button>
@@ -490,10 +510,18 @@ class CapitalFlowChart {
         
         // Định nghĩa các symbol mặc định
         this.defaultSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'BNCUSDT'];
+        this.symbolNameElement = this.container.querySelector('.symbol-name');
         this.setup();
     }
 
-    async setup() {
+    // Thêm method để cập nhật tên symbol
+    updateSymbolName(symbol) {
+        if (this.symbolNameElement) {
+            this.symbolNameElement.textContent = symbol.replace('USDT', '/USDT');
+        }
+    }
+
+        async setup() {
         const symbolDropdown = document.querySelector(`.symbol-dropdown[data-index="${this.index}"]`);
         if (!symbolDropdown) {
             console.error(`Symbol dropdown with index ${this.index} not found`);
@@ -504,16 +532,20 @@ class CapitalFlowChart {
             symbolDropdown,
             (symbol) => {
                 this.symbol = symbol;
+                this.updateSymbolName(symbol);  // Cập nhật tên symbol
                 const activeTimeFilter = this.container.querySelector('.time-filter.active');
                 if (activeTimeFilter) {
                     this.loadData(activeTimeFilter.dataset.period);
                 }
             },
-            this.defaultSymbols[this.index]  // Truyền symbol mặc định dựa trên index
+            this.defaultSymbols[this.index]
         );
         await symbolSearch.loadSymbols();
+        
+        // Cập nhật tên symbol mặc định
+        this.updateSymbolName(this.defaultSymbols[this.index]);
     }
-
+    
     async loadData(period) {
         if (!this.symbol) return;
 
