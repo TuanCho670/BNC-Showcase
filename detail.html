@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capital Flow Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1e222d;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            padding: 10px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: #131722;
+            border-radius: 8px;
+        }
+
+        .symbol-selectors {
+            display: flex;
+            gap: 15px;
+        }
+
+        .symbol-dropdown {
+            position: relative;
+            width: 150px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #2a2e39;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 0 8px;
+        }
+
+        .symbol-search {
+            background: transparent;
+            border: none;
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 13px;
+            width: 100%;
+            outline: none;
+        }
+
+        .symbol-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #2a2e39;
+            border: 1px solid #333;
+            border-radius: 4px;
+            margin-top: 5px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .symbol-list.show {
+            display: block;
+        }
+
+        .symbol-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #262626;
+        }
+
+        .symbol-option:hover {
+            background: #4a5163;
+        }
+
+        .crypto-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #262626;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        .symbol-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .symbol-name {
+            color: #fff;
+            font-size: 13px;
+        }
+
+        .symbol-type {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            font-size: 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-apply {
+            background: #00C076;
+            color: white;
+        }
+
+        .btn-refresh {
+            background: #3375BB;
+            color: white;
+        }
+
+        .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+}
+
+     .chart-container {
+    background: #131722;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: calc(50vh - 50px); /* Đảm bảo 4 chart vừa màn hình */
+}
+        .chart-header {
+            margin-bottom: 10px;
+        }
+
+        .time-filters {
+            display: flex;
+            gap: 3px;
+        }
+
+        .time-filter {
+            padding: 4px 8px;
+            background: #131722;
+            border: none;
+            border-radius: 4px;
+            color: #666;
+            cursor: pointer;
+            font-size: 15px;
+            margin: 0 2px;
+        }
+
+        .time-filter.active {
+            background: #163192;
+            color: #ffffff;
+        }
+
+        .chart-area {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            margin-bottom: 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #131722;
+            border-radius: 4px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 6px 8px;
+            text-align: right;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 18px;
+        }
+
+        .data-table th:first-child,
+        .data-table td:first-child {
+            text-align: left;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .data-table th {
+            color: #ffffff;
+            font-weight: normal;
+            border-bottom: 1px solid #333;
+        }
+
+        .buy-value { color: #00ff9d !important; }
+        .sell-value { color: #ff0022 !important; }
+        .net-value { color: #fff !important; }
+        .net-value.positive { color: #00C076 !important; }
+        .net-value.negative { color: #F6465D !important; }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e222d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ffffff;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #404040;
+        }
+
+        .search-container.focus {
+            border-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="symbol-selectors">
+                <div class="symbol-dropdown" data-index="0">
+                    <div class="search-container">
+                        <input type="text" class="symbol-search" placeholder="Search symbol...">
+                    </div>
+                    <div class="symbol-list"></div>
+                </div>
+                <div class="symbol-dropdown" data-index="1">
+                    <div class="search-container">
+                        <input type="text" class="symbol-search" placeholder="Search symbol...">
+                    </div>
+                    <div class="symbol-list"></div>
+                </div>
+                <div class="symbol-dropdown" data-index="2">
+                    <div class="search-container">
+                        <input type="text" class="symbol-search" placeholder="Search symbol...">
+                    </div>
+                    <div class="symbol-list"></div>
+                </div>
+                <div class="symbol-dropdown" data-index="3">
+                    <div class="search-container">
+                        <input type="text" class="symbol-search" placeholder="Search symbol...">
+                    </div>
+                    <div class="symbol-list"></div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-apply">Apply</button>
+                <button class="btn btn-refresh">Refresh</button>
+            </div>
+        </div>
+        <div class="charts-grid">
+            <!-- Chart templates will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <template id="chart-template">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="time-filters">
+                    <button class="time-filter" data-period="MINUTE_15">15m</button>
+                    <button class="time-filter" data-period="MINUTE_30">30m</button>
+                    <button class="time-filter" data-period="HOUR_1">1h</button>
+                    <button class="time-filter" data-period="HOUR_2">2h</button>
+                    <button class="time-filter" data-period="HOUR_4">4h</button>
+                    <button class="time-filter active" data-period="DAY_1">1ngày</button>
+                </div>
+            </div>
+            <div class="chart-area">
+                <canvas></canvas>
+                <div class="loading">Loading...</div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Lệnh</th>
+                        <th>Mua</th>
+                        <th>Bán</th>
+                        <th>Vào</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Lớn</td>
+                        <td class="buy-value">0.00</td>
+                        <td class="sell-value">0.00</td>
+                        <td class="net-value">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Trung bình</td>
+                        <td class="buy-value">0.00</td>
+                        <td class="sell-value">0.00</td>
+                        <td class="net-value">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Nhỏ</td>
+                        <td class="buy-value">0.00</td>
+                        <td class="sell-value">0.00</td>
+                        <td class="net-value">0.00</td>
+                    </tr>
+                    <tr>
+                        <td>Tổng</td>
+                        <td class="buy-value">0.00</td>
+                        <td class="sell-value">0.00</td>
+                        <td class="net-value">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </template>
+    <script>
+    // Định nghĩa mapping cho các loại crypto
+const cryptoTypes = {
+    'BTC': 'Tiền tệ',
+    'ETH': 'Tiền điện tử',
+    'BNB': 'BNB',
+    'SOL': 'Solana',
+    'DOGE': 'Meme',
+    'SHIB': 'Meme',
+    'XRP': 'Payment',
+    'ADA': 'Smart Contract',
+    'MATIC': 'Layer 2',
+    'DOT': 'Interoperability',
+};
+
+// Hàm format số
+const formatNumber = (value) => {
+    if (value === null || value === undefined) return '0.00';
+    if (Math.abs(value) >= 1000000) {
+        return (value / 1000000).toFixed(2) + 'M';
+    } else if (Math.abs(value) >= 1000) {
+        return (value / 1000).toFixed(2) + 'K';
+    } else if (Math.abs(value) < 0.01) {
+        return value.toFixed(4);
+    }
+    return value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
+
+class SymbolSearch {
+    constructor(dropdown, onChange, defaultSymbol) {  // Thêm defaultSymbol parameter
+        this.dropdown = dropdown;
+        this.onChange = onChange;
+        this.defaultSymbol = defaultSymbol;  // Lưu defaultSymbol
+        this.searchInput = dropdown.querySelector('.symbol-search');
+        this.symbolList = dropdown.querySelector('.symbol-list');
+        this.searchContainer = dropdown.querySelector('.search-container');
+        this.symbols = [];
+        this.setupEventListeners();
+    }
+
+    async loadSymbols() {
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            const data = await response.json();
+            this.symbols = data.symbols
+                .filter(s => s.quoteAsset === 'USDT' && s.status === 'TRADING')
+                .map(s => ({
+                    symbol: s.symbol,
+                    baseAsset: s.baseAsset,
+                    type: cryptoTypes[s.baseAsset] || 'Altcoin'
+                }))
+                .sort((a, b) => a.symbol.localeCompare(b.symbol));
+            
+            // Sử dụng defaultSymbol thay vì symbol đầu tiên
+            this.searchInput.value = this.defaultSymbol;
+            this.onChange(this.defaultSymbol);
+            this.filterSymbols('');
+            
+        } catch (error) {
+            console.error('Error loading symbols:', error);
+        }
+    }
+
+    setupEventListeners() {
+        this.searchInput.addEventListener('input', () => {
+            this.filterSymbols(this.searchInput.value);
+        });
+
+        this.searchInput.addEventListener('focus', () => {
+            this.symbolList.classList.add('show');
+            this.searchContainer.classList.add('focus');
+            this.filterSymbols(this.searchInput.value);
+        });
+
+        this.searchInput.addEventListener('blur', () => {
+            this.searchContainer.classList.remove('focus');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!this.dropdown.contains(e.target)) {
+                this.symbolList.classList.remove('show');
+            }
+        });
+    }
+
+    filterSymbols(searchTerm) {
+        const term = searchTerm.toUpperCase();
+        const filteredSymbols = this.symbols.filter(s => 
+            s.symbol.includes(term) || s.baseAsset.includes(term)
+        );
+
+        this.symbolList.innerHTML = filteredSymbols
+            .map(s => `
+                <div class="symbol-option" data-symbol="${s.symbol}">
+                    <div class="crypto-icon">${s.baseAsset.slice(0, 1)}</div>
+                    <div class="symbol-details">
+                        <div class="symbol-name">${s.symbol}</div>
+                        <div class="symbol-type">${s.type}</div>
+                    </div>
+                </div>
+            `)
+            .join('');
+
+        this.symbolList.classList.add('show');
+
+        this.symbolList.querySelectorAll('.symbol-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const symbol = option.dataset.symbol;
+                this.searchInput.value = symbol;
+                this.symbolList.classList.remove('show');
+                this.onChange(symbol);
+            });
+        });
+    }
+}
+
+class CapitalFlowChart {
+    constructor(container, index) {
+        this.container = container;
+        this.index = index;
+        this.symbol = '';
+        this.chart = null;
+        
+        // Định nghĩa các symbol mặc định
+        this.defaultSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'BNCUSDT'];
+        this.setup();
+    }
+
+    async setup() {
+        const symbolDropdown = document.querySelector(`.symbol-dropdown[data-index="${this.index}"]`);
+        if (!symbolDropdown) {
+            console.error(`Symbol dropdown with index ${this.index} not found`);
+            return;
+        }
+
+        const symbolSearch = new SymbolSearch(
+            symbolDropdown,
+            (symbol) => {
+                this.symbol = symbol;
+                const activeTimeFilter = this.container.querySelector('.time-filter.active');
+                if (activeTimeFilter) {
+                    this.loadData(activeTimeFilter.dataset.period);
+                }
+            },
+            this.defaultSymbols[this.index]  // Truyền symbol mặc định dựa trên index
+        );
+        await symbolSearch.loadSymbols();
+    }
+
+    async loadData(period) {
+        if (!this.symbol) return;
+
+        const loading = this.container.querySelector('.loading');
+        loading.style.display = 'block';
+
+        try {
+            const response = await fetch(
+                `https://www.binance.info/bapi/earn/v1/public/indicator/capital-flow/info?period=${period}&symbol=${this.symbol}`
+            );
+            const data = await response.json();
+
+            if (data.success) {
+                this.updateChart(data.data);
+                this.updateTable(data.data);
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            loading.style.display = 'none';
+        }
+    }
+
+    updateChart(data) {
+    const ctx = this.container.querySelector('canvas').getContext('2d');
+    
+    if (this.chart) {
+        this.chart.destroy();
+    }
+
+    // Tính toán dữ liệu mua/bán
+    const buySmall = data.buyTakerSmallVolume || 0;
+    const buyMedium = data.buyTakerMediumVolume || 0;
+    const buyBig = data.buyTakerBigVolume || 0;
+    
+    const sellSmall = data.buyMakerSmallVolume || 0;
+    const sellMedium = data.buyMakerMediumVolume || 0;
+    const sellBig = data.buyMakerBigVolume || 0;
+
+    // Tổng mua bán
+    const totalBuy = buySmall + buyMedium + buyBig;
+    const totalSell = sellSmall + sellMedium + sellBig;
+
+    // Tính phần trăm
+    const getPercent = (value, total) => {
+        if (total === 0) return '0.00';
+        return ((value / total) * 100).toFixed(2);
+    };
+
+    const buySmallPct = getPercent(buySmall, totalBuy);
+    const buyMediumPct = getPercent(buyMedium, totalBuy);
+    const buyBigPct = getPercent(buyBig, totalBuy);
+    
+    const sellSmallPct = getPercent(sellSmall, totalSell);
+    const sellMediumPct = getPercent(sellMedium, totalSell);
+    const sellBigPct = getPercent(sellBig, totalSell);
+
+    this.chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                `+${buyBigPct}%`,
+                `+${buyMediumPct}%`,
+                `+${buySmallPct}%`,
+                `-${sellBigPct}%`,
+                `-${sellMediumPct}%`,
+                `-${sellSmallPct}%`
+            ],
+            datasets: [{
+                data: [
+                    buyBig,
+                    buyMedium,
+                    buySmall,
+                    sellBig,
+                    sellMedium,
+                    sellSmall
+                ],
+                backgroundColor: [
+                    '#00C076',
+                    '#00C076CC',
+                    '#00C07699',
+                    '#F6465D',
+                    '#F6465DCC',
+                    '#F6465D99'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    align: 'start',
+                    labels: {
+                        color: '#fff',
+                        usePointStyle: true,
+                        padding: 10,
+                        font: {
+                            size: 11
+                        },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            const percentages = data.labels;
+                            return data.datasets[0].data.map((value, i) => ({
+                                text: percentages[i],
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                strokeStyle: data.datasets[0].backgroundColor[i],
+                                lineWidth: 0,
+                                hidden: false,
+                                index: i
+                            }));
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    right: 50 // Tạo không gian cho legend
+                }
+            }
+        }
+    });
+}
+
+updateTable(data) {
+    const tbody = this.container.querySelector('tbody');
+    const rows = tbody.getElementsByTagName('tr');
+
+    // Tính toán lớn
+    const buyBig = data.buyTakerBigVolume || 0;
+    const sellBig = data.buyMakerBigVolume || 0;
+    const bigInflow = data.bigVolumeNetInflow || 0;
+
+    // Tính toán trung bình
+    const buyMedium = data.buyTakerMediumVolume || 0;
+    const sellMedium = data.buyMakerMediumVolume || 0;
+    const mediumInflow = data.mediumVolumeNetInflow || 0;
+
+    // Tính toán nhỏ
+    const buySmall = data.buyTakerSmallVolume || 0;
+    const sellSmall = data.buyMakerSmallVolume || 0;
+    const smallInflow = data.smallVolumeNetInflow || 0;
+
+    // Cập nhật bảng
+    // Lớn
+    rows[0].children[1].textContent = formatNumber(buyBig);
+    rows[0].children[2].textContent = formatNumber(sellBig);
+    rows[0].children[3].textContent = formatNumber(bigInflow);
+
+    // Trung bình
+    rows[1].children[1].textContent = formatNumber(buyMedium);
+    rows[1].children[2].textContent = formatNumber(sellMedium);
+    rows[1].children[3].textContent = formatNumber(mediumInflow);
+
+    // Nhỏ
+    rows[2].children[1].textContent = formatNumber(buySmall);
+    rows[2].children[2].textContent = formatNumber(sellSmall);
+    rows[2].children[3].textContent = formatNumber(smallInflow);
+
+    // Tổng
+    const totalBuy = buyBig + buyMedium + buySmall;
+    const totalSell = sellBig + sellMedium + sellSmall;
+    const totalInflow = bigInflow + mediumInflow + smallInflow;
+
+    rows[3].children[1].textContent = formatNumber(totalBuy);
+    rows[3].children[2].textContent = formatNumber(totalSell);
+    rows[3].children[3].textContent = formatNumber(totalInflow);
+
+    // Thêm màu sắc cho net values
+    Array.from(tbody.querySelectorAll('.net-value')).forEach(cell => {
+        const value = parseFloat(cell.textContent.replace(/[^-\d.]/g, ''));
+        cell.classList.remove('positive', 'negative');
+        if (value > 0) {
+            cell.classList.add('positive');
+        } else if (value < 0) {
+            cell.classList.add('negative');
+        }
+    });
+}
+}
+
+class Dashboard {
+    constructor() {
+        this.charts = [];
+        this.init();
+    }
+
+    init() {
+        const chartsGrid = document.querySelector('.charts-grid');
+        
+        // Create 4 charts
+        for (let i = 0; i < 4; i++) {
+            const chartTemplate = document.getElementById('chart-template');
+            const chartElement = chartTemplate.content.cloneNode(true);
+            chartsGrid.appendChild(chartElement);
+            
+            const chartContainer = chartsGrid.lastElementChild;
+            const chart = new CapitalFlowChart(chartContainer, i);
+            this.charts.push(chart);
+        }
+
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Time filter clicks
+        document.querySelectorAll('.time-filter').forEach(filter => {
+            filter.addEventListener('click', (e) => {
+                const chartContainer = e.target.closest('.chart-container');
+                chartContainer.querySelectorAll('.time-filter').forEach(f => 
+                    f.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                const chartIndex = Array.from(chartContainer.parentNode.children)
+                    .indexOf(chartContainer);
+                const period = e.target.dataset.period;
+                this.charts[chartIndex].loadData(period);
+            });
+        });
+
+        // Apply button
+        document.querySelector('.btn-apply').addEventListener('click', () => {
+            this.charts.forEach(chart => {
+                const period = chart.container.querySelector('.time-filter.active').dataset.period;
+                chart.loadData(period);
+            });
+        });
+
+        // Refresh button
+        document.querySelector('.btn-refresh').addEventListener('click', () => {
+            this.charts.forEach(chart => {
+                const period = chart.container.querySelector('.time-filter.active').dataset.period;
+                chart.loadData(period);
+            });
+        });
+    }
+}
+
+// Khởi tạo giá trị mặc định cho searchInput
+document.addEventListener('DOMContentLoaded', () => {
+    new Dashboard();
+    const defaultSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'BNCUSDT'];
+    const searchInputs = document.querySelectorAll('.symbol-search');
+    searchInputs.forEach((input, index) => {
+        input.value = defaultSymbols[index];
+    });
+});
+
+    </script>
+</body>
+</html>
