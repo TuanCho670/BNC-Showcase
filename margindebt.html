@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thống kê Margin Debt các đồng Binance</title>
+    <style>
+        body {
+            background-color: #0b0e11;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #fcd535;
+            margin-bottom: 30px;
+        }
+        
+        #loadingMessage {
+            text-align: center;
+            color: #848e9c;
+        }
+        
+        #errorMessage {
+            text-align: center;
+            color: #f6465d;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #2b3139;
+        }
+        
+        th {
+            background-color: #1e2329;
+            color: #fcd535;
+        }
+        
+        tr:hover {
+            background-color: #1e2329;
+        }
+        
+        .positive {
+            color: #0ecb81;
+        }
+        
+        .negative {
+            color: #f6465d;
+        }
+
+        .last-update {
+            text-align: right;
+            color: #848e9c;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Thống kê Margin Debt các đồng Binance</h1>
+        <div id="loadingMessage">Đang tải dữ liệu...</div>
+        <div id="errorMessage"></div>
+        <table id="summaryTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Điểm cuối 24h</th>
+                    <th>Điểm cuối 30 ngày</th>
+                    <th>Thời gian cập nhật</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTableBody"></tbody>
+        </table>
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script>
+        const baseApiUrl = "https://www.binance.com/bapi/margin/v1/public/margin/marketStats/marginDebt?asset=";
+        
+        async function fetchMarginDebtList() {
+            try {
+                const loadingMessage = document.getElementById('loadingMessage');
+                const errorMessage = document.getElementById('errorMessage');
+                const summaryTable = document.getElementById('summaryTable');
+                const tableBody = document.getElementById('summaryTableBody');
+                const lastUpdate = document.getElementById('lastUpdate');
+
+                // Lấy danh sách các cặp USDT
+                const exchangeInfoResponse = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+                const exchangeInfo = await exchangeInfoResponse.json();
+                const usdtPairs = exchangeInfo.symbols
+                    .filter(symbol => symbol.symbol.endsWith('USDT'))
+                    .map(symbol => symbol.baseAsset);
+
+                // Lấy dữ liệu margin debt cho từng cặp
+                for (const asset of usdtPairs) {
+                    try {
+                        // Lấy dữ liệu 24h và 30 ngày
+                        const response24h = await fetch(`${baseApiUrl}${asset}&period=24&limit=1`);
+                        const data24h = await response24h.json();
+                        
+                        const response30d = await fetch(`${baseApiUrl}${asset}&period=24&limit=30`);
+                        const data30d = await response30d.json();
+
+                        if (data24h.data?.length > 0 && data30d.data?.length > 0) {
+                            const marginDebt24h = data24h.data[0];
+                            const marginDebt30d = data30d.data[0];
+
+                            const updateTime = new Date(marginDebt24h.timestamp);
+                            const formattedTime = updateTime.toLocaleString('vi-VN');
+
+                            const row = tableBody.insertRow();
+                            row.innerHTML = `
+                                <td>${asset}/USDT</td>
+                                <td class="${marginDebt24h.marginDebtGrowth >= 0 ? 'positive' : 'negative'}">
+                                    ${(marginDebt24h.marginDebtGrowth * 100).toFixed(2)}%
+                                </td>
+                                <td class="${marginDebt30d.marginDebtGrowth >= 0 ? 'positive' : 'negative'}">
+                                    ${(marginDebt30d.marginDebtGrowth * 100).toFixed(2)}%
+                                </td>
+                                <td>${formattedTime}</td>
+                            `;
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching data for ${asset}:`, error);
+                    }
+                }
+
+                loadingMessage.style.display = 'none';
+                summaryTable.style.display = 'table';
+                lastUpdate.textContent = `Cập nhật lần cuối: ${new Date().toLocaleString('vi-VN')}`;
+            } catch (error) {
+                console.error("Error:", error);
+                errorMessage.textContent = `Lỗi: ${error.message}`;
+                loadingMessage.style.display = 'none';
+            }
+        }
+
+        // Load dữ liệu khi trang tải xong
+        document.addEventListener('DOMContentLoaded', fetchMarginDebtList);
+    </script>
+</body>
+</html>
