@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông tin Nợ Ký Quỹ và Dữ liệu Real-time Binance (Đã lọc)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0b0e11;
+            color: #ffffff;
+        }
+        h1 {
+            text-align: center;
+        }
+        #symbolsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #1e2329;
+        }
+        #symbolsTable th, #symbolsTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #2b3139;
+        }
+        #symbolsTable th {
+            background-color: #2b3139;
+            font-weight: bold;
+        }
+        #symbolsTable tr:hover {
+            background-color: #2b3139;
+        }
+        .viewDetails {
+            padding: 6px 12px;
+            background-color: #fcd535;
+            color: #0b0e11;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .search-wrapper {
+    position: relative;
+    width: 300px;
+    margin: 10px 0;
+}
+
+.search-box {
+    position: relative;
+    width: 100%;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 35px;
+    background: #1e2329;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #fcd535;
+}
+
+.search-box i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #848e9c;
+}
+
+.search-results {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #1e2329;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    margin-top: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.search-result-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #374151;
+}
+
+.search-result-item:hover {
+    background: #2b3139;
+}
+
+.search-result-item .symbol {
+    color: #fff;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.search-result-item .base-asset {
+    color: #848e9c;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.symbol-title {
+    color: #ffffff;
+    font-size: 24px;
+    text-align: center;
+}
+h2#symbolTitle {
+    margin-bottom: -20px;
+}
+
+        .viewDetails:hover {
+            background-color: #f0b90b;
+        }
+        #loadingMessage, #errorMessage {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #errorMessage {
+            color: #ff4d4f;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .popup-content {
+            background-color: #1e2329;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #fcd535;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .positive {
+            color: #0ecb81;
+        }
+        .negative {
+            color: #f6465d;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thông tin Nợ Ký Quỹ và Dữ liệu Real-time Binance (Đã lọc)</h1>
+    <div id="loadingMessage">Đang tải dữ liệu...</div>
+    <div id="errorMessage"></div>
+    <div class="search-wrapper">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search symbol...">
+        </div>
+        <div id="searchResults" class="search-results">
+            <!-- Kết quả search sẽ được thêm vào đây -->
+        </div>
+    </div>
+    <table id="symbolsTable">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Giá hiện tại</th>
+                <th>Thay đổi 24h</th>
+                <th>Khối lượng 24h</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="symbolsTableBody"></tbody>
+    </table>
+    
+    <div id="chartPopup" class="popup">
+        <div class="popup-content">
+            <h2 id="symbolTitle" class="symbol-title"></h2>
+            <span class="close">&times;</span>
+            <canvas id="marginChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const baseApiUrl = "https://www.binance.com/bapi/margin/v1/public/margin/marketStats/marginDebt?asset=";
+    const chartContainer = document.getElementById("marginChart");
+    const errorMessageElement = document.getElementById("errorMessage");
+    const loadingMessageElement = document.getElementById("loadingMessage");
+    const popup = document.getElementById("chartPopup");
+    const closeBtn = document.getElementsByClassName("close")[0];
+    const tableBody = document.getElementById('symbolsTableBody');
+    let allSymbols = []; // Lưu trữ tất cả symbols
+    const symbolsData = {};
+
+    async function fetchUSDTPairs() {
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            if (!response.ok) throw new Error('Không thể tải thông tin cặp giao dịch từ Binance.');
+            
+            const data = await response.json();
+            const usdtPairs = data.symbols.filter(symbol => symbol.symbol.endsWith('USDT'));
+            displaySymbols(usdtPairs);
+            initializeWebSocket(usdtPairs.map(pair => pair.symbol.toLowerCase()));
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            errorMessageElement.textContent = 'Lỗi khi tải dữ liệu: ' + error.message;
+        }
+    }
+
+    function displaySymbols(symbols) {
+    tableBody.innerHTML = ''; // Xóa dữ liệu cũ
+    symbols.forEach(symbol => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td>${symbol.symbol}</td>
+            <td class="price">-</td>
+            <td class="change">-</td>
+            <td class="volume">-</td>
+            <td><button class="viewDetails" onclick="viewDetails('${symbol.baseAsset}')">Xem chi tiết</button></td>
+        `;
+        symbolsData[symbol.symbol] = { row, validData: false }; // Thêm cờ `validData` để kiểm tra sau
+    });
+    loadingMessageElement.style.display = 'none';
+    document.getElementById('symbolsTable').style.display = 'table';
+
+    // Thêm đoạn xử lý search vào đây
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toUpperCase();
+        
+        // Lấy trực tiếp tất cả các rows trong bảng
+        const rows = tableBody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            // Lấy nội dung của ô đầu tiên (Symbol)
+            const symbolCell = row.querySelector('td:first-child');
+            if (symbolCell) {
+                const symbol = symbolCell.textContent;
+                // Ẩn/hiện dựa trên searchTerm và sử dụng startsWith thay vì includes
+                if (searchTerm === '' || symbol.startsWith(searchTerm)) {
+                    row.classList.remove('hidden');
+                    row.style.cssText = ''; // Xóa inline style display nếu có
+                } else {
+                    row.classList.add('hidden');
+                    row.style.cssText = 'display: none !important;'; // Force ẩn
+                }
+            }
+        });
+    });
+}
+
+    function initializeWebSocket(symbols) {
+        const streams = symbols.map(s => `${s}@ticker`).join('/');
+        const socket = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            updateSymbolData(data);
+        };
+
+        socket.onerror = (error) => {
+            console.error("WebSocket Error: ", error);
+            errorMessageElement.textContent = 'Lỗi WebSocket: Không thể nhận dữ liệu.';
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket connection closed");
+        };
+    }
+
+    function updateSymbolData(data) {
+        const symbol = data.s;
+        if (symbolsData[symbol]) {
+            const { row } = symbolsData[symbol];
+            const priceCell = row.querySelector('.price');
+            const changeCell = row.querySelector('.change');
+            const volumeCell = row.querySelector('.volume');
+
+            const price = parseFloat(data.c);
+            const changePercent = parseFloat(data.P);
+            const volume = parseFloat(data.v);
+
+            if (price > 0 && changePercent !== 0 && volume > 0) {
+                priceCell.textContent = price.toFixed(2);
+                changeCell.textContent = `${changePercent.toFixed(2)}%`;
+                changeCell.className = `change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                volumeCell.textContent = volume.toFixed(2);
+                symbolsData[symbol].validData = true; // Đánh dấu là có dữ liệu hợp lệ
+                row.style.display = ''; // Hiển thị dòng
+            } else {
+                symbolsData[symbol].validData = false; // Đánh dấu là không hợp lệ
+                row.style.display = 'none'; // Ẩn dòng
+            }
+        }
+    }
+
+    // Ẩn tất cả các dòng không hợp lệ nếu chưa cập nhật
+    function hideInvalidRows() {
+        Object.keys(symbolsData).forEach(symbol => {
+            const { row, validData } = symbolsData[symbol];
+            if (!validData) {
+                row.style.display = 'none'; // Ẩn hàng
+            }
+        });
+    }
+
+    window.viewDetails = async function (asset) {
+    try {
+        errorMessageElement.textContent = '';
+        loadingMessageElement.style.display = 'block';
+
+        // Thêm tiêu đề symbol vào popup
+        const symbolTitle = document.getElementById('symbolTitle');
+        symbolTitle.textContent = `${asset}/USDT`;
+
+        const apiUrl = `${baseApiUrl}${asset}&period=24&limit=30`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        
+        const data = await response.json();
+        if (!data.data || data.data.length === 0) throw new Error('Không có dữ liệu cho biểu đồ');
+
+        const processedData = processGrowthData(data.data);
+        createLineChart(processedData, asset);
+        popup.style.display = "block";
+    } catch (error) {
+        console.error("Error in viewDetails:", error);
+        errorMessageElement.textContent = `Lỗi: ${error.message}`;
+    } finally {
+        loadingMessageElement.style.display = 'none';
+    }
+};
+
+    function processGrowthData(data) {
+    const T0 = 100;
+    let totalGrowth = 0;
+
+    // Kiểm tra dữ liệu đầu vào hợp lệ
+    if (!Array.isArray(data)) {
+        throw new Error("Dữ liệu đầu vào phải là một mảng.");
+    }
+
+    const growthData = data.map((item) => {
+        if (typeof item.marginDebtGrowth !== "number" || typeof item.timestamp !== "number") {
+            throw new Error("Dữ liệu item không hợp lệ: marginDebtGrowth và timestamp phải là số.");
+        }
+
+        const currentGrowth = item.marginDebtGrowth * T0;
+        totalGrowth += currentGrowth;
+
+        // Chuyển đổi timestamp thành định dạng UTC
+        const date = new Date(item.timestamp);
+        const formattedTime = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')} ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
+
+        console.log(`Thời gian (UTC): ${formattedTime}`); // Log thời gian UTC
+        return {
+            time: formattedTime,
+            growth: item.marginDebtGrowth * 100, // Tính phần trăm tăng trưởng
+        };
+    });
+
+    console.log(`Tổng tăng trưởng: ${totalGrowth.toFixed(2)}`);
+    return growthData;
+}
+
+function initializeSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
+    
+    let allSymbols = Array.from(tableBody.getElementsByTagName('tr')).map(row => {
+        const symbol = row.cells[0].textContent;
+        return {
+            symbol: symbol,
+            baseAsset: symbol.replace('USDT', '')
+        };
+    });
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toUpperCase();
+        if (searchTerm.length === 0) {
+            searchResults.style.display = 'none';
+            showAllTableRows(); // Hiển thị lại tất cả các dòng
+            return;
+        }
+
+        // Lọc kết quả cho dropdown
+        const filteredSymbols = allSymbols.filter(item => 
+            item.symbol.includes(searchTerm) || item.baseAsset.includes(searchTerm)
+        );
+
+        // Hiển thị kết quả trong dropdown
+        displaySearchResults(filteredSymbols);
+    });
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Mở dropdown khi focus vào input
+    searchInput.addEventListener('focus', function() {
+        if (this.value.length > 0) {
+            searchResults.style.display = 'block';
+        }
+    });
+}
+
+function displaySearchResults(results) {
+    const searchResults = document.getElementById('searchResults');
+    searchResults.innerHTML = '';
+    
+    results.forEach(item => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'search-result-item';
+        resultItem.innerHTML = `
+            <div>
+                <div class="symbol">${item.symbol}</div>
+                <div class="base-asset">${item.baseAsset}</div>
+            </div>
+        `;
+        
+        resultItem.addEventListener('click', () => {
+            document.getElementById('searchInput').value = item.symbol;
+            searchResults.style.display = 'none';
+            filterTableRows(item.symbol); // Lọc bảng để chỉ hiển thị symbol được chọn
+        });
+        
+        searchResults.appendChild(resultItem);
+    });
+    
+    searchResults.style.display = results.length > 0 ? 'block' : 'none';
+}
+
+function filterTableRows(selectedSymbol) {
+    const rows = tableBody.getElementsByTagName('tr');
+    for (let row of rows) {
+        const symbol = row.cells[0].textContent;
+        row.style.display = symbol === selectedSymbol ? '' : 'none';
+    }
+}
+
+function showAllTableRows() {
+    const rows = tableBody.getElementsByTagName('tr');
+    for (let row of rows) {
+        row.style.display = '';
+    }
+}
+
+    function createLineChart(data, asset) {
+        const ctx = chartContainer.getContext("2d");
+
+        if (window.marginChart instanceof Chart) {
+            window.marginChart.destroy();
+        }
+
+        window.marginChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: data.map((d) => d.time),
+                datasets: [
+                    {
+                        label: `Tăng trưởng Nợ Ký Quỹ ${asset} (%)`,
+                        data: data.map((d) => d.growth),
+                        borderColor: "#fcd535",
+                        backgroundColor: "rgba(252, 213, 53, 0.1)",
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: "#ffffff",
+                        pointRadius: 4,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `Tăng trưởng: ${context.raw.toFixed(2)}%`,
+                            title: (context) => `Thời gian: ${context[0].label}`, // Lấy giờ đã chuyển đổi từ `labels`
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: "#ffffff" },
+                    },
+                    y: {
+                        grid: { color: "rgba(255, 255, 255, 0.1)" },
+                        ticks: {
+                            color: "#ffffff",
+                            callback: (value) => `${value.toFixed(2)}%`,
+                        },
+                    },
+                },
+                layout: { padding: 10 },
+            },
+        });
+    }
+
+    closeBtn.onclick = () => (popup.style.display = "none");
+    window.onclick = (event) => {
+        if (event.target == popup) popup.style.display = "none";
+    };
+
+    fetchUSDTPairs().then(() => {
+    initializeSearch();
+});
+    setInterval(hideInvalidRows, 5000); // Kiểm tra và ẩn hàng không hợp lệ mỗi 5 giây
+});
+    </script>
+</body>
+</html>
