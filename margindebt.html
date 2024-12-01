@@ -2,7 +2,7 @@
 <html>
 <head>
   <base target="_top">
-  <title>Binance Margin Debt Calculator 30d</title>
+  <title>Binance Margin Debt Calculator</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     body {
@@ -157,30 +157,58 @@
   background: #f5f5f5;
   border-color: #ddd;
 }
+
+.clear-cache-button {
+  padding: 8px 12px;
+  border: 1px solid #ff9800;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  color: #ff9800;
+}
+
+.clear-cache-button:hover {
+  background: #ff9800;
+  color: #fff;
+}
+
+.clear-cache-button .clear-cache-label {
+  margin-left: 4px;
+  font-size: 14px;
+}
   </style>
   
 </head>
 <body>
-  <h2>Binance Margin Debt Calculator 30d</h2>
+  <h2>Binance Margin Debt Calculator</h2>
 
   <div class="search-filter-container">
     <div class="search-box">
       <input type="text" id="symbolSearch" placeholder="Search symbol..." oninput="filterTable()">
     </div>
-    <div class="filter-box">
-      <span class="filter-label">Highest %:</span>
-      <input type="number" id="minPercent" placeholder="Min %" oninput="filterTable()">
-      <span>-</span>
-      <input type="number" id="maxPercent" placeholder="Max %" oninput="filterTable()">
-      <button id="sortToggle" onclick="toggleSort()" class="sort-button">
-        <i id="sortIcon" class="fas fa-sort-amount-down"></i>
-        <span class="sort-label">Sắp xếp</span>
-      </button>
-      <button id="resetFilter" onclick="resetMinMax()" class="reset-button">
-        <i class="fas fa-times"></i>
-        <span class="reset-label">Xóa lọc</span>
-      </button>
-    </div>
+   <!-- Thêm nút clear cache vào cạnh nút reset -->
+<div class="filter-box">
+  <span class="filter-label">Highest %:</span>
+  <input type="number" id="minPercent" placeholder="Min %" oninput="filterTable()">
+  <span>-</span>
+  <input type="number" id="maxPercent" placeholder="Max %" oninput="filterTable()">
+  <button id="sortToggle" onclick="toggleSort()" class="sort-button">
+    <i id="sortIcon" class="fas fa-sort-amount-down"></i>
+    <span class="sort-label">Sắp xếp</span>
+  </button>
+  <button id="resetFilter" onclick="resetMinMax()" class="reset-button">
+    <i class="fas fa-times"></i>
+    <span class="reset-label">Xóa lọc</span>
+  </button>
+  <button id="clearCache" onclick="clearAllCache()" class="clear-cache-button">
+    <i class="fas fa-trash-alt"></i>
+    <span class="clear-cache-label">Xóa cache</span>
+  </button>
+</div>
   </div>
 
   <div id="status" class="status">Starting...</div>
@@ -287,6 +315,34 @@
         console.error('Error loading cache:', error);
       }
     }
+
+    // Thêm hàm xóa cache và refresh dữ liệu
+async function clearAllCache() {
+  try {
+    // Xóa cache từ localStorage
+    localStorage.removeItem('symbolsCache');
+    localStorage.removeItem('marginCache');
+    
+    // Reset các biến cache
+    cachedSymbols = null;
+    lastSymbolsUpdate = null;
+    cachedMarginData.clear();
+    lastMarginUpdate = null;
+    
+    // Clear bảng dữ liệu
+    document.getElementById('dataBody').innerHTML = '';
+    document.getElementById('status').innerHTML = 'Đang xóa cache và tải lại dữ liệu...';
+    
+    // Load lại dữ liệu từ đầu
+    await loadData();
+    
+    // Thông báo thành công
+    alert('Đã xóa cache và tải lại dữ liệu thành công!');
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    alert('Có lỗi khi xóa cache: ' + error.message);
+  }
+}
 
     function saveCacheToStorage() {
       try {
@@ -473,24 +529,25 @@ function filterTable() {
 }
 
 
-    async function loadData() {
-      const symbols = await getSymbolsWithCache();
-      displaySymbols(symbols);
-      
-      const now = new Date().getTime();
-      
-      // Check if we have valid cached margin data
-      if (cachedMarginData.size > 0 && lastMarginUpdate && 
-          (now - lastMarginUpdate) < CACHE_DURATION) {
-        // Use cached data
-        document.getElementById('status').innerHTML = 'Loading from cache...';
-        displayCachedData();
-        nextUpdateTime = lastMarginUpdate + CACHE_DURATION;
-      } else {
-        // Fetch new data
-        await refreshMarginDebt(true);
-      }
-    }
+    // Cập nhật lại hàm loadData để đảm bảo lấy dữ liệu mới
+async function loadData() {
+  try {
+    // Fetch symbols mới
+    const symbols = await fetchSymbols();
+    cachedSymbols = symbols;
+    lastSymbolsUpdate = new Date().getTime();
+    displaySymbols(symbols);
+    
+    // Refresh margin data
+    await refreshMarginDebt(true);
+    
+    // Lưu cache mới
+    saveCacheToStorage();
+  } catch (error) {
+    console.error('Error loading data:', error);
+    document.getElementById('status').innerHTML = 'Error: ' + error.message;
+  }
+}
 
       // Modify displayCachedData function
       function displayCachedData() {
@@ -534,44 +591,64 @@ function formatVietnameseTime(date) {
   });
 }
 
-    async function refreshMarginDebt(clearCache = true) {
-      if (!cachedSymbols) return;
-      
-      if (clearCache) {
-        document.getElementById('dataBody').innerHTML = '';
-        cachedMarginData.clear();
-      }
-      
-      const batches = chunkArray(cachedSymbols, BATCH_SIZE);
-      for(let i = 0; i < batches.length; i++) {
-        document.getElementById('status').innerHTML = 
-          `Processing batch ${i + 1}/${batches.length}...`;
-        
-        await processBatch(batches[i]);
-        
-        if (i < batches.length - 1) {
-          document.getElementById('status').innerHTML = 
-            'Waiting before next batch...';
-          await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
-        }
-      }
-      
-      lastMarginUpdate = new Date().getTime();
-      nextUpdateTime = lastMarginUpdate + CACHE_DURATION;
-      saveCacheToStorage();
-      updateCacheStatus();
-      
+async function refreshMarginDebt(clearCache = true) {
+  if (!cachedSymbols) return;
+  
+  if (clearCache) {
+    document.getElementById('dataBody').innerHTML = '';
+    cachedMarginData.clear();
+  }
+  
+  const batches = chunkArray(cachedSymbols, BATCH_SIZE);
+  let processedCount = 0;
+  
+  try {
+    for(let i = 0; i < batches.length; i++) {
       document.getElementById('status').innerHTML = 
-        `Data updated successfully. Cached ${cachedMarginData.size} symbols.`;
+        `Refreshing data: batch ${i + 1}/${batches.length}...`;
+      
+      // Sử dụng lại processBatch
+      await processBatch(batches[i]);
+      
+      if (i < batches.length - 1) {
+        document.getElementById('status').innerHTML = 
+          'Waiting before next batch...';
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+      }
     }
+    
+    lastMarginUpdate = new Date().getTime();
+    nextUpdateTime = lastMarginUpdate + CACHE_DURATION;
+    saveCacheToStorage();
+    updateCacheStatus();
+    
+    document.getElementById('status').innerHTML = 
+      `Data refreshed successfully. Updated ${cachedMarginData.size} symbols.`;
+      
+  } catch (error) {
+    console.error('Error in refreshMarginDebt:', error);
+    document.getElementById('status').innerHTML = 
+      `Error updating data: ${error.message}`;
+  }
+}
 
-   // Sửa lại hàm processBatch để lưu timestamp dạng số
 async function processBatch(symbols) {
   for(let symbol of symbols) {
     try {
       const marginUrl = `https://www.binance.com/bapi/margin/v1/public/margin/marketStats/marginDebt?asset=${symbol}&period=24&limit=30`;
+      
+      // Log request
+      console.log(`Fetching data for ${symbol}`);
+      
       const marginResponse = await fetch(marginUrl);
+      if (!marginResponse.ok) {
+        throw new Error(`HTTP error! status: ${marginResponse.status}`);
+      }
+      
       const marginData = await marginResponse.json();
+      
+      // Log response
+      console.log(`Got data for ${symbol}:`, marginData);
 
       if (marginData.data && marginData.data.length > 0) {
         const sortedData = marginData.data.sort((a, b) => b.timestamp - a.timestamp);
@@ -582,11 +659,14 @@ async function processBatch(symbols) {
 
         const result = {
           symbol: symbol + '/USDT',
-          currentTime: latestData.timestamp, // Lưu timestamp dạng số
+          currentTime: latestData.timestamp,
           currentPercentage: (latestData.marginDebtGrowth * 100).toFixed(2),
           highestPercentage: (highestData.marginDebtGrowth * 100).toFixed(2),
-          highestTime: highestData.timestamp // Lưu timestamp dạng số
+          highestTime: highestData.timestamp
         };
+
+        // Log processed result
+        console.log(`Processed data for ${symbol}:`, result);
 
         // Update cache
         cachedMarginData.set(symbol, result);
@@ -598,12 +678,14 @@ async function processBatch(symbols) {
             .withFailureHandler(reject)
             .updateSymbolData(result);
         });
+      } else {
+        console.log(`No data found for ${symbol}`);
       }
 
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
-      console.error("Error processing " + symbol + ":", error);
+      console.error(`Error processing ${symbol}:`, error);
     }
   }
 }
