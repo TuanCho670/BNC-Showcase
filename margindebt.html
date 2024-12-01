@@ -3,6 +3,7 @@
 <head>
   <base target="_top">
   <title>Binance Margin Debt Calculator 30d</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -48,10 +49,140 @@
       margin-top: 10px;
       color: #0056b3;
     }
+
+    .search-filter-container {
+      margin: 20px 0;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .search-box {
+      position: relative;
+      width: 200px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .filter-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 20px;
+    }
+    .filter-box input {
+      width: 80px;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .filter-label {
+      font-weight: bold;
+      color: #666;
+    }
+
+    .reset-button {
+  padding: 8px 12px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  color: #dc3545;
+}
+
+.reset-button:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+.reset-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: #ddd;
+  color: #666;
+}
+
+.reset-button .reset-label {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+    .sort-button {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .sort-button:hover {
+      background: #f5f5f5;
+      border-color: #ccc;
+    }
+
+    .sort-button i {
+      font-size: 14px;
+    }
+
+    .sort-label {
+      margin-left: 4px;
+      font-size: 14px;
+    }
+    /* Style cho trạng thái disabled */
+.sort-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.sort-button:not(.disabled):hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* Ngăn không cho hover effect khi disabled */
+.sort-button.disabled:hover {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
   </style>
+  
 </head>
 <body>
-  <h2>Binance Margin Debt Calculator</h2>
+  <h2>Binance Margin Debt Calculator 30d</h2>
+
+  <div class="search-filter-container">
+    <div class="search-box">
+      <input type="text" id="symbolSearch" placeholder="Search symbol..." oninput="filterTable()">
+    </div>
+    <div class="filter-box">
+      <span class="filter-label">Highest %:</span>
+      <input type="number" id="minPercent" placeholder="Min %" oninput="filterTable()">
+      <span>-</span>
+      <input type="number" id="maxPercent" placeholder="Max %" oninput="filterTable()">
+      <button id="sortToggle" onclick="toggleSort()" class="sort-button">
+        <i id="sortIcon" class="fas fa-sort-amount-down"></i>
+        <span class="sort-label">Sắp xếp</span>
+      </button>
+      <button id="resetFilter" onclick="resetMinMax()" class="reset-button">
+        <i class="fas fa-times"></i>
+        <span class="reset-label">Xóa lọc</span>
+      </button>
+    </div>
+  </div>
+
   <div id="status" class="status">Starting...</div>
   <div id="nextUpdate" class="next-update"></div>
   <div id="refreshTimer" class="refresh-timer"></div>
@@ -84,6 +215,7 @@
     let nextUpdateTime = null;
     let nextRefreshTime = null;
     let isInitialLoad = true;
+    let sortDirection = 'desc'; // 'desc' hoặc 'asc'
 
     window.onload = async function() {
       try {
@@ -218,6 +350,128 @@
         }
       }
     }
+    function resetMinMax() {
+  // Reset giá trị input
+  document.getElementById('minPercent').value = '';
+  document.getElementById('maxPercent').value = '';
+  
+  // Reset lại bảng và các trạng thái
+  filterTable();
+  updateButtonsState();
+}
+
+    // Thêm hàm để kiểm tra có filter min-max không
+function hasMinMaxFilter() {
+  const minPercent = document.getElementById('minPercent').value;
+  const maxPercent = document.getElementById('maxPercent').value;
+  return minPercent !== '' || maxPercent !== '';
+}
+
+// Cập nhật lại hàm updateSortButtonState thành updateButtonsState
+function updateButtonsState() {
+  const sortButton = document.getElementById('sortToggle');
+  const resetButton = document.getElementById('resetFilter');
+  const hasFilter = hasMinMaxFilter();
+
+  // Cập nhật trạng thái nút sắp xếp
+  if (hasFilter) {
+    sortButton.classList.remove('disabled');
+    sortButton.removeAttribute('disabled');
+  } else {
+    sortButton.classList.add('disabled');
+    sortButton.setAttribute('disabled', 'disabled');
+  }
+
+  // Cập nhật trạng thái nút reset
+  if (hasFilter) {
+    resetButton.classList.remove('disabled');
+    resetButton.removeAttribute('disabled');
+  } else {
+    resetButton.classList.add('disabled');
+    resetButton.setAttribute('disabled', 'disabled');
+  }
+}
+
+// Cập nhật event listeners
+document.getElementById('minPercent').addEventListener('input', function() {
+  updateButtonsState();
+  filterTable();
+});
+
+document.getElementById('maxPercent').addEventListener('input', function() {
+  updateButtonsState();
+  filterTable();
+});
+
+// Gọi lần đầu khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+  updateButtonsState();
+});
+
+// Sửa lại hàm toggleSort
+function toggleSort() {
+  // Kiểm tra có filter min-max chưa
+  if (!hasMinMaxFilter()) {
+    alert('Vui lòng nhập giá trị Min - Max % trước khi sắp xếp');
+    return;
+  }
+
+  sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+  
+  // Cập nhật icon
+  const sortIcon = document.getElementById('sortIcon');
+  if (sortDirection === 'desc') {
+    sortIcon.className = 'fas fa-sort-amount-down';
+  } else {
+    sortIcon.className = 'fas fa-sort-amount-up';
+  }
+  
+  filterTable();
+}
+
+    // Sửa lại hàm filterTable
+function filterTable() {
+  const searchValue = document.getElementById('symbolSearch').value.toLowerCase();
+  
+  let minPercent = document.getElementById('minPercent').value;
+  let maxPercent = document.getElementById('maxPercent').value;
+  
+  minPercent = minPercent === '' ? -Infinity : parseFloat(minPercent);
+  maxPercent = maxPercent === '' ? Infinity : parseFloat(maxPercent);
+  
+  const tbody = document.getElementById('dataBody');
+  const rows = Array.from(tbody.getElementsByTagName('tr'));
+  
+  const filteredRows = rows.filter(row => {
+    const symbol = row.cells[0].textContent.toLowerCase();
+    const highestPercent = parseFloat(row.getAttribute('data-highest-percent'));
+    
+    const matchesSearch = symbol.includes(searchValue);
+    const matchesFilter = (isNaN(minPercent) || highestPercent >= minPercent) && 
+                         (isNaN(maxPercent) || highestPercent <= maxPercent);
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  // Chỉ sắp xếp khi có filter min-max
+  if (hasMinMaxFilter()) {
+    filteredRows.sort((a, b) => {
+      const percentA = parseFloat(a.getAttribute('data-highest-percent'));
+      const percentB = parseFloat(b.getAttribute('data-highest-percent'));
+      return sortDirection === 'desc' ? percentB - percentA : percentA - percentB;
+    });
+  }
+
+  // Ẩn tất cả rows
+  rows.forEach(row => row.style.display = 'none');
+  
+  // Hiển thị và sắp xếp lại các rows đã lọc
+  filteredRows.forEach(row => {
+    row.style.display = '';
+    tbody.appendChild(row);
+  });
+}
+
 
     async function loadData() {
       const symbols = await getSymbolsWithCache();
@@ -238,11 +492,13 @@
       }
     }
 
-    function displayCachedData() {
+      // Modify displayCachedData function
+      function displayCachedData() {
       document.getElementById('dataBody').innerHTML = '';
       for (const data of cachedMarginData.values()) {
         addRowToTable(data);
       }
+      filterTable(); // Apply filters to cached data
       updateCacheStatus();
     }
 
@@ -366,12 +622,13 @@ async function processBatch(symbols) {
       return chunks;
     }
 
-    // Sửa lại hàm addRowToTable
-function addRowToTable(data) {
+    function addRowToTable(data) {
   const tbody = document.getElementById('dataBody');
   const row = document.createElement('tr');
   
-  // Format thời gian theo giờ Việt Nam
+  // Lưu giá trị phần trăm vào data attribute
+  row.setAttribute('data-highest-percent', data.highestPercentage);
+  
   const currentTime = formatVietnameseTime(data.currentTime);
   const highestTime = formatVietnameseTime(data.highestTime);
   
@@ -382,8 +639,10 @@ function addRowToTable(data) {
      <td>${data.highestPercentage}% (${highestTime})</td>`;
   
   tbody.appendChild(row);
+  filterTable();
   row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
+
   </script>
 </body>
 </html>
