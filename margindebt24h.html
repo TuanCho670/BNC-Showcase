@@ -180,6 +180,37 @@
   margin-left: 4px;
   font-size: 14px;
 }
+/* Back To Top */
+    .back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.3s;
+}
+
+.back-to-top button:hover {
+  background-color: #0056b3;
+}
   </style>
   
 </head>
@@ -229,7 +260,29 @@
     </thead>
     <tbody id="dataBody"></tbody>
   </table>
+  <div id="backToTop" class="back-to-top">
+  <button aria-label="Back to top">↑</button>
+</div>
+  
+<script>
+// Hiển thị/ẩn nút khi cuộn
+window.addEventListener('scroll', function() {
+  const backToTopButton = document.getElementById('backToTop');
+  if (window.scrollY > 300) { // Hiện nút khi cuộn xuống 300px
+    backToTopButton.classList.add('show');
+  } else {
+    backToTopButton.classList.remove('show');
+  }
+});
 
+// Xử lý sự kiện click
+document.getElementById('backToTop').addEventListener('click', function() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth' // Cuộn mượt về đầu trang
+  });
+});
+</script>
   <script>
      const BATCH_SIZE = 50;
     const BATCH_DELAY = 45000;
