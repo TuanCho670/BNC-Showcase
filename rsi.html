@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<!-- Style giữ nguyên như cũ -->
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <!-- Style code giữ nguyên -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .search-input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .control-button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+        .control-button.orange {
+            color: #ff6b00;
+            border-color: #ff6b00;
+        }
+        .refresh-status {
+            margin: 10px 0;
+        }
+        .cache-info {
+            color: #4CAF50;
+            margin: 5px 0;
+        }
+        .progress-container {
+            margin: 10px 0;
+            background: #f0f0f0;
+            border-radius: 4px;
+            height: 4px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #4CAF50;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            white-space: nowrap;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+            min-width: 100px;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        td:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+        th:first-child {
+            text-align: left;
+            position: sticky;
+            left: 0;
+            background: #f8f9fa;
+            z-index: 2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        tr:hover td:first-child {
+            background-color: #f5f5f5;
+        }
+
+         /* Previous styles remain */
+         .date-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+            scrollbar-width: thin;
+            -ms-overflow-style: none;
+        }
+        
+        .date-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .date-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .date-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .date-item {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            min-width: 80px;
+            text-align: center;
+            background: white;
+        }
+        
+        .date-item.selected {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+
+        .refresh-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .next-refresh {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="search-controls">
+        <input type="text" placeholder="Search symbol..." class="search-input" id="searchInput">
+        <button class="control-button">Min %</button>
+        <button class="control-button">Max %</button>
+        <button class="control-button">Sắp xếp</button>
+        <button class="control-button">Xóa lọc</button>
+        <button class="control-button orange">Xóa cache</button>
+    </div>
+    <div class="date-scroll" id="dateScroll">
+        <!-- Will be populated with dates -->
+    </div>
+
+    <div class="refresh-info">
+        <div id="status" class="refresh-status">
+            Đang xử lý: <span id="processedCount">0</span>/<span id="totalCount">0</span> coins
+        </div>
+        <div class="next-refresh">
+            Cập nhật tiếp theo trong: <span id="nextRefresh">15</span>s
+        </div>
+    </div>
+    <div class="refresh-status">Đang xử lý: <span id="processedCount">0</span>/382 coins</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr id="dateHeader">
+                    <th>Symbol</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+        </table>
+    </div>
+    <!-- HTML structure giữ nguyên -->
+    <script>
+        const BATCH_SIZE = 5;
+        const DELAY_BETWEEN_BATCHES = 1000;
+        let processedCount = 0;
+        let totalSymbols = 0;
+
+        function generateDateHeaders() {
+            const headerRow = document.getElementById('dateHeader');
+            let currentDate = moment();
+            
+            // Xóa các cột cũ nếu có
+            while (headerRow.children.length > 1) {
+                headerRow.removeChild(headerRow.lastChild);
+            }
+            
+            // Thêm 15 cột cho các ngày
+            for(let i = 0; i < 15; i++) {
+                const date = currentDate.clone().subtract(i, 'days');
+                const th = document.createElement('th');
+                th.textContent = date.format('DD/MM');
+                headerRow.appendChild(th);
+            }
+        }
+
+        async function fetchSymbols() {
+            try {
+                const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+                const data = await response.json();
+                const symbols = data.symbols
+                    .filter(symbol => symbol.symbol.endsWith('USDT'))
+                    .map(symbol => symbol.symbol);
+                totalSymbols = symbols.length;
+                return symbols;
+            } catch (error) {
+                console.error('Error fetching symbols:', error);
+                return [];
+            }
+        }
+
+        function calculateRSI(prices, periods = 14) {
+            if (prices.length < periods + 1) {
+                return Array(prices.length).fill(null);
+            }
+
+            let gains = [];
+            let losses = [];
+            for (let i = 1; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                gains.push(change > 0 ? change : 0);
+                losses.push(change < 0 ? -change : 0);
+            }
+
+            let avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
+            let avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
+
+            const rsiValues = Array(periods).fill(null);
+            let currentRsi = 100 - (100 / (1 + (avgGain / avgLoss)));
+            rsiValues.push(currentRsi);
+
+            for (let i = periods; i < gains.length; i++) {
+                avgGain = ((avgGain * (periods - 1)) + gains[i]) / periods;
+                avgLoss = ((avgLoss * (periods - 1)) + losses[i]) / periods;
+
+                if (avgLoss === 0) {
+                    currentRsi = 100;
+                } else {
+                    const rs = avgGain / avgLoss;
+                    currentRsi = 100 - (100 / (1 + rs));
+                }
+                rsiValues.push(currentRsi);
+            }
+
+            return rsiValues;
+        }
+
+        async function processCoinBatch(coins) {
+            const tableBody = document.getElementById('tableBody');
+            
+            const promises = coins.map(async (symbol) => {
+                try {
+                    const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1d&limit=100`);
+                    const data = await response.json();
+                    
+                    const prices = data.map(candle => parseFloat(candle[4]));
+                    const rsiValues = calculateRSI(prices);
+                    const last15RSI = rsiValues.slice(-15).reverse();
+
+                    const row = document.createElement('tr');
+                    
+                    const symbolCell = document.createElement('td');
+                    symbolCell.textContent = symbol;
+                    row.appendChild(symbolCell);
+                    
+                    last15RSI.forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = value ? value.toFixed(2) : 'N/A';
+                        row.appendChild(td);
+                    });
+                    
+                    tableBody.appendChild(row);
+
+                } catch (error) {
+                    console.error(`Error processing ${symbol}:`, error);
+                }
+            });
+
+            await Promise.all(promises);
+            processedCount += coins.length;
+            updateProgress();
+        }
+
+         // Script giữ nguyên nhưng sửa lại hàm updateProgress
+         function updateProgress() {
+            const processedCountElement = document.getElementById('processedCount');
+            const totalCountElement = document.getElementById('totalCount');
+            const statusElement = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+
+            if (processedCountElement) processedCountElement.textContent = processedCount;
+            if (totalCountElement) totalCountElement.textContent = totalSymbols;
+            if (progressBar) progressBar.style.width = `${(processedCount / totalSymbols) * 100}%`;
+        }
+
+        async function processAllCoins() {
+            const symbols = await fetchSymbols();
+            generateDateHeaders();
+
+            for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+                const batch = symbols.slice(i, i + BATCH_SIZE);
+                await processCoinBatch(batch);
+                if (i + BATCH_SIZE < symbols.length) {
+                    await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+                }
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.getElementById('tableBody').getElementsByTagName('tr');
+            
+            for(let row of rows) {
+                const symbol = row.cells[0].textContent.toLowerCase();
+                row.style.display = symbol.includes(searchTerm) ? '' : 'none';
+            }
+        });
+
+        processAllCoins();
+    </script>
+</body>
+</html>
