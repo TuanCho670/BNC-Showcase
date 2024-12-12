@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Binance Margin Debt Calculator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      padding: 20px;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .data-table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .data-table th {
+      background-color: #f3f3f3;
+      font-weight: bold;
+    }
+    #symbolList {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      display:none
+    }
+    .next-update {
+      margin-top: 10px;
+      color: #666;
+    }
+    .cache-status {
+      margin-top: 10px;
+      color: #28a745;
+    }
+    .refresh-timer {
+      margin-top: 10px;
+      color: #0056b3;
+    }
+
+   /* Điều chỉnh container chính */
+.search-filter-container {
+  margin: 20px 0;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* Cập nhật filter box */
+.filter-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 0; /* Bỏ margin-left */
+  flex-wrap: wrap;
+}
+
+/* Style cho filter type (radio buttons) */
+.filter-type {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 2px;
+  margin-left: 20px;
+}
+
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 3px;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.radio-label:has(input:checked) {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.radio-label input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Style cho filter range */
+.filter-label {
+  font-weight: bold;
+  color: #666;
+  white-space: nowrap;
+}
+
+.filter-box input[type="number"] {
+  width: 80px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Cập nhật buttons */
+.sort-button,
+.reset-button,
+.clear-cache-button {
+  height: 36px; /* Thống nhất chiều cao */
+  padding: 0 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Style cho search box */
+.search-box {
+  position: relative;
+  min-width: 200px;
+}
+
+.search-box input {
+  width: 100%;
+  height: 36px; /* Thống nhất chiều cao */
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+    .reset-button {
+  padding: 8px 12px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  color: #dc3545;
+}
+
+.reset-button:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+.reset-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: #ddd;
+  color: #666;
+}
+
+.reset-button .reset-label {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+    .sort-button {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .sort-button:hover {
+      background: #f5f5f5;
+      border-color: #ccc;
+    }
+
+    .sort-button i {
+      font-size: 14px;
+    }
+
+    .sort-label {
+      margin-left: 4px;
+      font-size: 14px;
+    }
+    /* Style cho trạng thái disabled */
+.sort-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.sort-button:not(.disabled):hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* Ngăn không cho hover effect khi disabled */
+.sort-button.disabled:hover {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+.clear-cache-button {
+  padding: 8px 12px;
+  border: 1px solid #ff9800;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  color: #ff9800;
+}
+
+.clear-cache-button:hover {
+  background: #ff9800;
+  color: #fff;
+}
+
+.clear-cache-button .clear-cache-label {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.3s;
+}
+
+.back-to-top button:hover {
+  background-color: #0056b3;
+}
+
+
+  </style>
+  
+</head>
+<body>
+  <h2>Binance Margin Debt Calculator</h2>
+
+  <div class="search-filter-container">
+    <div class="search-box">
+      <input type="text" id="symbolSearch" placeholder="Search symbol..." oninput="filterTable()">
+    </div>
+   <!-- Thêm nút clear cache vào cạnh nút reset -->
+   <div class="filter-box">
+    <div class="filter-type">
+      <label class="radio-label">
+        <input type="radio" name="filterType" value="high" checked> High
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="filterType" value="low"> Low
+      </label>
+    </div>
+    <span class="filter-label">Range:</span>
+    <input type="number" id="minPercent" placeholder="Min %" oninput="filterTable()">
+    <span>-</span>
+    <input type="number" id="maxPercent" placeholder="Max %" oninput="filterTable()">
+    <button id="sortToggle" onclick="toggleSort()" class="sort-button">
+      <i id="sortIcon" class="fas fa-sort-amount-down"></i>
+      <span class="sort-label">Sắp xếp</span>
+    </button>
+    <button id="resetFilter" onclick="resetMinMax()" class="reset-button">
+      <i class="fas fa-times"></i>
+      <span class="reset-label">Xóa lọc</span>
+    </button>
+    <button id="clearCache" onclick="clearAllCache()" class="clear-cache-button">
+      <i class="fas fa-trash-alt"></i>
+      <span class="clear-cache-label">Xóa cache</span>
+    </button>
+  </div>
+
+  <div id="status" class="status">Starting...</div>
+  <div id="nextUpdate" class="next-update"></div>
+  <div id="refreshTimer" class="refresh-timer"></div>
+  <div id="cacheStatus" class="cache-status"></div>
+  
+  <div id="symbolList"></div>
+
+  <table class="data-table">
+    <thead>
+        <tr id="headerRow">
+            <th>Symbol</th>
+            <th>Day 1</th>
+            <th>Day 2</th>
+            <th>Day 3</th>
+            <th>Day 4</th>
+            <th>Day 5</th>
+            <th>Day 6</th>
+            <th>Day 7</th>
+            <th>Highest Positive % (Time)</th>
+            <th>Highest Negative % (Time)</th>
+          </tr>
+    </thead>
+    <tbody id="dataBody"></tbody>
+  </table>  
+  <div id="backToTop" class="back-to-top">
+    <button aria-label="Back to top">↑</button>
+  </div>
+  
+
+  <script>
+    const BATCH_SIZE = 50;
+    const BATCH_DELAY = 45000;
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const REFRESH_INTERVAL = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+    
+    let cachedSymbols = null;
+    let lastSymbolsUpdate = null;
+    let cachedMarginData = new Map();
+    let lastMarginUpdate = null;
+    let nextUpdateTime = null;
+    let nextRefreshTime = null;
+    let isInitialLoad = true;
+    let sortDirection = 'desc'; // 'desc' hoặc 'asc'
+
+    window.onload = async function() {
+      try {
+        loadCacheFromStorage();
+        await loadData();
+        
+        // Set up refresh margin debt every 15 minutes
+        setInterval(async () => {
+          document.getElementById('status').innerHTML = 'Refreshing margin debt data...';
+          await refreshMarginDebt(false); // false means don't clear cache
+          nextRefreshTime = new Date().getTime() + REFRESH_INTERVAL;
+        }, REFRESH_INTERVAL);
+        
+        // Initial setup of next refresh time
+        nextRefreshTime = new Date().getTime() + REFRESH_INTERVAL;
+        
+        // Update both countdowns
+        setInterval(updateCountdowns, 1000);
+        
+      } catch (error) {
+        document.getElementById('status').innerHTML = 'Error: ' + error.message;
+        console.error(error);
+      }
+    }
+    // Helper function to get UTC timestamp for start of day
+    function getUTCDayTimestamp(daysAgo = 0) {
+        const date = new Date();
+        date.setUTCHours(0, 0, 0, 0);
+        date.setUTCDate(date.getUTCDate() - daysAgo);
+        return date.getTime();
+    }
+
+    // Helper function to get array of last 7 days' timestamps
+    function getLast7DaysTimestamps() {
+        const timestamps = [];
+        for(let i = 0; i < 7; i++) {
+            timestamps.push(getUTCDayTimestamp(i));
+        }
+        return timestamps.sort((a, b) => b - a); // Sort descending
+    }
+
+  // Helper function to format UTC date
+function formatUTCDate(timestamp) {
+  const date = new Date(timestamp);
+  return `${String(date.getUTCDate()).padStart(2, '0')}/${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+    async function fetchSymbols() {
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            let symbols = data.symbols
+                .filter(s => s.quoteAsset === 'USDT' && s.status === 'TRADING')
+                .map(s => s.baseAsset);
+            
+            symbols = ['BTC', ...symbols.filter(s => s !== 'BTC')];
+            
+            return symbols;
+        } catch (error) {
+            console.error('Error fetching symbols:', error);
+            throw error;
+        }
+    }
+
+    function loadCacheFromStorage() {
+      try {
+        // Load symbols cache
+        const symbolsCache = localStorage.getItem('symbolsCache');
+        if (symbolsCache) {
+          const parsed = JSON.parse(symbolsCache);
+          cachedSymbols = parsed.symbols;
+          lastSymbolsUpdate = parsed.timestamp;
+        }
+
+        // Load margin data cache
+        const marginCache = localStorage.getItem('marginCache');
+        if (marginCache) {
+          const parsed = JSON.parse(marginCache);
+          cachedMarginData = new Map(Object.entries(parsed.data));
+          lastMarginUpdate = parsed.timestamp;
+          
+          // Update cache status
+          updateCacheStatus();
+        }
+      } catch (error) {
+        console.error('Error loading cache:', error);
+      }
+    }
+
+    function updateHeaders(timestamps) {
+  const headerRow = document.getElementById("headerRow");
+  const headerCells = headerRow.getElementsByTagName("th");
+
+  // Bắt đầu từ cột thứ 2 (bỏ qua "Symbol")
+  for (let i = 0; i < timestamps.length; i++) {
+    const date = new Date(timestamps[i]);
+    const formattedDate = date.toLocaleDateString("en-GB"); // Định dạng DD/MM/YYYY
+    headerCells[i + 1].textContent = formattedDate;
+  }
+}
+
+    // Thêm hàm xóa cache và refresh dữ liệu
+async function clearAllCache() {
+  try {
+    // Xóa cache từ localStorage
+    localStorage.removeItem('symbolsCache');
+    localStorage.removeItem('marginCache');
+    
+    // Reset các biến cache
+    cachedSymbols = null;
+    lastSymbolsUpdate = null;
+    cachedMarginData.clear();
+    lastMarginUpdate = null;
+    
+    // Clear bảng dữ liệu
+    document.getElementById('dataBody').innerHTML = '';
+    document.getElementById('status').innerHTML = 'Đang xóa cache và tải lại dữ liệu...';
+    
+    // Load lại dữ liệu từ đầu
+    await loadData();
+    
+    // Thông báo thành công
+    alert('Đã xóa cache và tải lại dữ liệu thành công!');
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    alert('Có lỗi khi xóa cache: ' + error.message);
+  }
+}
+
+    function saveCacheToStorage() {
+      try {
+        // Save symbols cache
+        if (cachedSymbols) {
+          localStorage.setItem('symbolsCache', JSON.stringify({
+            symbols: cachedSymbols,
+            timestamp: lastSymbolsUpdate
+          }));
+        }
+
+        // Save margin data cache
+        if (cachedMarginData.size > 0) {
+          localStorage.setItem('marginCache', JSON.stringify({
+            data: Object.fromEntries(cachedMarginData),
+            timestamp: lastMarginUpdate
+          }));
+        }
+      } catch (error) {
+        console.error('Error saving cache:', error);
+      }
+    }
+
+    function updateCacheStatus() {
+      const cacheStatus = document.getElementById('cacheStatus');
+      if (lastMarginUpdate) {
+        const cacheAge = Math.floor((new Date().getTime() - lastMarginUpdate) / (60 * 1000));
+        const symbolCount = cachedMarginData.size;
+        cacheStatus.innerHTML = `Cache: ${symbolCount} symbols, ${cacheAge} minutes old`;
+      }
+    }
+
+    function updateCountdowns() {
+      // Update cache countdown
+      if (nextUpdateTime) {
+        const now = new Date().getTime();
+        const cacheTimeLeft = nextUpdateTime - now;
+        
+        if (cacheTimeLeft > 0) {
+          const hours = Math.floor(cacheTimeLeft / (60 * 60 * 1000));
+          const minutes = Math.floor((cacheTimeLeft % (60 * 60 * 1000)) / 60000);
+          const seconds = Math.floor((cacheTimeLeft % 60000) / 1000);
+          document.getElementById('nextUpdate').innerHTML = 
+            `Cache expires in: ${hours}h ${minutes}m ${seconds}s`;
+        } else {
+          document.getElementById('nextUpdate').innerHTML = 
+            'Cache expired - Update needed';
+        }
+      }
+
+      // Update refresh countdown
+      if (nextRefreshTime) {
+        const now = new Date().getTime();
+        const refreshTimeLeft = nextRefreshTime - now;
+        
+        if (refreshTimeLeft > 0) {
+          const minutes = Math.floor(refreshTimeLeft / 60000);
+          const seconds = Math.floor((refreshTimeLeft % 60000) / 1000);
+          document.getElementById('refreshTimer').innerHTML = 
+            `Next refresh in: ${minutes}m ${seconds}s`;
+        }
+      }
+    }
+// Cập nhật hàm reset
+function resetMinMax() {
+  document.getElementById('minPercent').value = '';
+  document.getElementById('maxPercent').value = '';
+  document.getElementById('symbolSearch').value = '';
+  filterTable();
+  updateButtonsState();
+}
+
+// Thêm event listener cho radio buttons
+document.querySelectorAll('input[name="filterType"]').forEach(radio => {
+  radio.addEventListener('change', filterTable);
+});
+
+    // Thêm hàm để kiểm tra có filter min-max không
+function hasMinMaxFilter() {
+  const minPercent = document.getElementById('minPercent').value;
+  const maxPercent = document.getElementById('maxPercent').value;
+  return minPercent !== '' || maxPercent !== '';
+}
+
+// Cập nhật lại hàm updateSortButtonState thành updateButtonsState
+function updateButtonsState() {
+  const sortButton = document.getElementById('sortToggle');
+  const resetButton = document.getElementById('resetFilter');
+  const hasFilter = hasMinMaxFilter();
+
+  // Cập nhật trạng thái nút sắp xếp
+  if (hasFilter) {
+    sortButton.classList.remove('disabled');
+    sortButton.removeAttribute('disabled');
+  } else {
+    sortButton.classList.add('disabled');
+    sortButton.setAttribute('disabled', 'disabled');
+  }
+
+  // Cập nhật trạng thái nút reset
+  if (hasFilter) {
+    resetButton.classList.remove('disabled');
+    resetButton.removeAttribute('disabled');
+  } else {
+    resetButton.classList.add('disabled');
+    resetButton.setAttribute('disabled', 'disabled');
+  }
+}
+
+// Cập nhật event listeners
+document.getElementById('minPercent').addEventListener('input', function() {
+  updateButtonsState();
+  filterTable();
+});
+
+document.getElementById('maxPercent').addEventListener('input', function() {
+  updateButtonsState();
+  filterTable();
+});
+
+// Gọi lần đầu khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+  updateButtonsState();
+});
+
+// Sửa lại hàm toggleSort
+function toggleSort() {
+  // Kiểm tra có filter min-max chưa
+  if (!hasMinMaxFilter()) {
+    alert('Vui lòng nhập giá trị Min - Max % trước khi sắp xếp');
+    return;
+  }
+
+  sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+  
+  // Cập nhật icon
+  const sortIcon = document.getElementById('sortIcon');
+  if (sortDirection === 'desc') {
+    sortIcon.className = 'fas fa-sort-amount-down';
+  } else {
+    sortIcon.className = 'fas fa-sort-amount-up';
+  }
+  
+  filterTable();
+}
+
+function filterTable() {
+  const searchValue = document.getElementById('symbolSearch').value.toLowerCase().trim();
+  const filterType = document.querySelector('input[name="filterType"]:checked')?.value || 'high';
+  
+  let minPercent = document.getElementById('minPercent').value.trim();
+  let maxPercent = document.getElementById('maxPercent').value.trim();
+  
+  const tbody = document.getElementById('dataBody');
+  const rows = Array.from(tbody.getElementsByTagName('tr'));
+  
+  // Lưu thứ tự ban đầu
+  const originalOrder = rows.map((row, index) => ({
+    row: row,
+    index: index,
+    symbol: row.cells[0].textContent
+  }));
+
+  // Lọc rows nếu có điều kiện lọc
+  let filteredRows = originalOrder;
+  if (searchValue || minPercent || maxPercent) {
+    filteredRows = originalOrder.filter(({row}) => {
+      const symbol = row.cells[0].textContent.toLowerCase();
+      let value;
+      
+      if (filterType === 'high') {
+        value = parseFloat(row.getAttribute('data-highest-percent')) || 0;
+      } else {
+        value = parseFloat(row.getAttribute('data-lowest-percent')) || 0;
+      }
+
+      // Kiểm tra search
+      const matchesSearch = !searchValue || symbol.includes(searchValue);
+
+      // Kiểm tra range
+      let matchesRange = true;
+      if (minPercent && maxPercent) {
+        const min = parseFloat(minPercent);
+        const max = parseFloat(maxPercent);
+        
+        if (filterType === 'high') {
+          matchesRange = value >= min && value <= max;
+        } else {
+          matchesRange = value <= -min && value >= -max;
+        }
+      }
+
+      return matchesSearch && matchesRange;
+    });
+  }
+
+  // Sắp xếp kết quả
+  if (hasMinMaxFilter()) {
+    filteredRows.sort((a, b) => {
+      let valueA, valueB;
+      
+      if (filterType === 'high') {
+        valueA = parseFloat(a.row.getAttribute('data-highest-percent')) || 0;
+        valueB = parseFloat(b.row.getAttribute('data-highest-percent')) || 0;
+      } else {
+        valueA = parseFloat(a.row.getAttribute('data-lowest-percent')) || 0;
+        valueB = parseFloat(b.row.getAttribute('data-lowest-percent')) || 0;
+      }
+
+      if (filterType === 'high') {
+        return sortDirection === 'desc' ? valueB - valueA : valueA - valueB;
+      } else {
+        return sortDirection === 'desc' ? valueA - valueB : valueB - valueA;
+      }
+    });
+  } else {
+    // Giữ thứ tự gốc với BTC/USDT ở đầu
+    filteredRows.sort((a, b) => {
+      if (a.symbol === 'BTC/USDT') return -1;
+      if (b.symbol === 'BTC/USDT') return 1;
+      return a.index - b.index;
+    });
+  }
+
+  // Hiển thị lại tất cả rows
+  rows.forEach(row => row.style.display = 'none');
+  
+  // Hiển thị các rows phù hợp
+  filteredRows.forEach(({row}) => {
+    row.style.display = '';
+    tbody.appendChild(row);
+  });
+
+  updateButtonsState();
+}
+
+// Helper function to check if we have min-max filter
+function hasMinMaxFilter() {
+  const minPercent = document.getElementById('minPercent').value.trim();
+  const maxPercent = document.getElementById('maxPercent').value.trim();
+  return minPercent !== '' || maxPercent !== '';
+}
+
+// Update event listener for search input
+document.getElementById('symbolSearch').addEventListener('input', function(e) {
+  filterTable();
+});
+
+
+    // Cập nhật lại hàm loadData để đảm bảo lấy dữ liệu mới
+    async function loadData() {
+        try {
+            const symbols = await fetchSymbols();
+            cachedSymbols = symbols;
+            lastSymbolsUpdate = new Date().getTime();
+            displaySymbols(symbols);
+            await refreshMarginDebt(true);
+            saveCacheToStorage();
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.getElementById('status').innerHTML = 'Error: ' + error.message;
+        }
+    }
+
+     // Thêm hàm để sắp xếp lại dữ liệu khi load
+function sortInitialData(data) {
+  // Đảm bảo BTC/USDT luôn ở đầu
+  return [...data].sort((a, b) => {
+    if (a.symbol === 'BTC/USDT') return -1;
+    if (b.symbol === 'BTC/USDT') return 1;
+    return a.symbol.localeCompare(b.symbol);
+  });
+}
+
+// Cập nhật hàm displayCachedData
+function displayCachedData() {
+  document.getElementById('dataBody').innerHTML = '';
+  const sortedData = sortInitialData(Array.from(cachedMarginData.values()));
+  for (const data of sortedData) {
+    addRowToTable(data);
+  }
+  filterTable();
+  updateCacheStatus();
+}
+    async function getSymbolsWithCache() {
+      const now = new Date().getTime();
+      
+      if (cachedSymbols && lastSymbolsUpdate && 
+          (now - lastSymbolsUpdate) < CACHE_DURATION) {
+        return cachedSymbols;
+      }
+      
+      document.getElementById('status').innerHTML = 'Fetching symbols...';
+      const symbols = await fetchSymbols();
+      
+      cachedSymbols = symbols;
+      lastSymbolsUpdate = now;
+      saveCacheToStorage();
+      
+      return symbols;
+    }
+
+    function formatVietnameseTime(date) {
+        return new Date(date).toLocaleString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    }
+
+
+// Cập nhật refreshMarginDebt để thêm tracking tiến trình rõ ràng hơn
+async function refreshMarginDebt(clearCache = true) {
+  if (!cachedSymbols) return;
+  
+  if (clearCache) {
+    document.getElementById('dataBody').innerHTML = '';
+    cachedMarginData.clear();
+  }
+  
+  const batches = chunkArray(cachedSymbols, BATCH_SIZE);
+  let processedCount = 0;
+  
+  try {
+    for(let i = 0; i < batches.length; i++) {
+      document.getElementById('status').innerHTML = 
+        `Refreshing data: batch ${i + 1}/${batches.length}... (${processedCount}/${cachedSymbols.length} symbols)`;
+      
+      await processBatch(batches[i]);
+      processedCount += batches[i].length;
+      
+      if (i < batches.length - 1) {
+        document.getElementById('status').innerHTML = 
+          `Waiting before next batch... (${processedCount}/${cachedSymbols.length} symbols processed)`;
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+      }
+    }
+    
+    lastMarginUpdate = new Date().getTime();
+    nextUpdateTime = lastMarginUpdate + CACHE_DURATION;
+    saveCacheToStorage();
+    updateCacheStatus();
+    
+    document.getElementById('status').innerHTML = 
+      `Data refreshed successfully. Updated ${cachedMarginData.size} symbols.`;
+      
+  } catch (error) {
+    console.error('Error in refreshMarginDebt:', error);
+    document.getElementById('status').innerHTML = 
+      `Error updating data: ${error.message}`;
+  }
+}
+
+    // Cập nhật processBatch với error handling tốt hơn và logging
+async function processBatch(symbols) {
+  for(let symbol of symbols) {
+    try {
+      const marginUrl = `https://www.binance.com/bapi/margin/v1/public/margin/marketStats/marginDebt?asset=${symbol}&period=24&limit=30`;
+      
+      console.log(`Fetching data for ${symbol}`);
+      
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Rate limiting
+
+      const marginResponse = await fetch(marginUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+        },
+      });
+
+      if (!marginResponse.ok) {
+        throw new Error(`HTTP error! status: ${marginResponse.status}`);
+      }
+
+      const marginData = await marginResponse.json();
+      
+      if (marginData.data && marginData.data.length > 0) {
+        // Lấy 7 dữ liệu gần nhất
+        const sortedData = marginData.data
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 7);
+
+        // Định dạng dữ liệu ngày
+        const last7Days = sortedData.map(data => ({
+          date: new Date(data.timestamp).toISOString().split('T')[0],
+          percentage: (data.marginDebtGrowth * 100).toFixed(2),
+        }));
+
+        // Tìm giá trị dương cao nhất
+        const highestPositiveData = marginData.data.reduce((max, current) => {
+          if (current.marginDebtGrowth > 0 && current.marginDebtGrowth > max.marginDebtGrowth) {
+            return current;
+          }
+          return max;
+        }, { marginDebtGrowth: -Infinity });
+
+        // Tìm giá trị âm thấp nhất (có độ lớn lớn nhất)
+        const lowestNegativeData = marginData.data.reduce((min, current) => {
+          if (current.marginDebtGrowth < 0 && current.marginDebtGrowth < min.marginDebtGrowth) {
+            return current;
+          }
+          return min;
+        }, { marginDebtGrowth: 0 });
+
+        const result = {
+          symbol: symbol + '/USDT',
+          dailyData: last7Days,
+          highestPositivePercentage: highestPositiveData.marginDebtGrowth !== -Infinity
+            ? (highestPositiveData.marginDebtGrowth * 100).toFixed(2)
+            : null,
+          highestPositiveTime: highestPositiveData.timestamp
+            ? new Date(highestPositiveData.timestamp).toISOString()
+            : null,
+          highestNegativePercentage: lowestNegativeData.marginDebtGrowth !== 0
+            ? (lowestNegativeData.marginDebtGrowth * 100).toFixed(2)
+            : null,
+          highestNegativeTime: lowestNegativeData.timestamp
+            ? new Date(lowestNegativeData.timestamp).toISOString()
+            : null,
+        };
+
+        cachedMarginData.set(symbol, result);
+        addRowToTable(result);
+      }
+    } catch (error) {
+      console.error(`Error processing ${symbol}:`, error);
+      if (error.message.includes('429')) {
+        await new Promise(resolve => setTimeout(resolve, 30000)); // Rate limit cooldown
+      }
+    }
+  }
+}
+
+// Cập nhật addRowToTable với formatting tốt hơn
+function addRowToTable(data) {
+  const tableBody = document.getElementById("dataBody");
+  const row = document.createElement("tr");
+  
+  
+  // Set data attributes cho cả high và low
+  const highestPercent = parseFloat(data.highestPositivePercentage) || 0;
+  const lowestPercent = parseFloat(data.highestNegativePercentage) || 0;
+  row.setAttribute('data-highest-percent', highestPercent);
+  row.setAttribute('data-lowest-percent', lowestPercent);
+
+  // Symbol column
+  const symbolCell = document.createElement("td");
+  symbolCell.textContent = data.symbol;
+  row.appendChild(symbolCell);
+
+  // Daily data columns
+  for (let i = 0; i < 7; i++) {
+    const dayCell = document.createElement("td");
+    const dayData = data.dailyData[i];
+    if (dayData) {
+      const percentage = parseFloat(dayData.percentage);
+      dayCell.textContent = `${percentage.toFixed(2)}%`;
+      // Thêm màu sắc cho các giá trị
+      if (percentage > 0) dayCell.style.color = 'green';
+      if (percentage < 0) dayCell.style.color = 'red';
+    } else {
+      dayCell.textContent = "-";
+    }
+    row.appendChild(dayCell);
+  }
+
+  // Highest Positive
+  const highestPositiveCell = document.createElement("td");
+  if (data.highestPositivePercentage !== null) {
+    highestPositiveCell.textContent = `${data.highestPositivePercentage}% (${formatVietnameseTime(data.highestPositiveTime)})`;
+    highestPositiveCell.style.color = 'green';
+  } else {
+    highestPositiveCell.textContent = "N/A";
+  }
+  row.appendChild(highestPositiveCell);
+
+  // Highest Negative
+  const highestNegativeCell = document.createElement("td");
+  if (data.highestNegativePercentage !== null) {
+    highestNegativeCell.textContent = `${data.highestNegativePercentage}% (${formatVietnameseTime(data.highestNegativeTime)})`;
+    highestNegativeCell.style.color = 'red';
+  } else {
+    highestNegativeCell.textContent = "N/A";
+  }
+  row.appendChild(highestNegativeCell);
+
+  tableBody.appendChild(row);
+}
+
+
+    function displaySymbols(symbols) {
+      const symbolList = document.getElementById('symbolList');
+      symbolList.innerHTML = 'Found ' + symbols.length + ' symbols:<br>' +
+        symbols.map((s, i) => (i + 1) + '. ' + s).join(', ');
+    }
+
+    function chunkArray(array, size) {
+      const chunks = [];
+      for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+      }
+      return chunks;
+    }
+
+// Cập nhật table headers
+function updateTableHeaders() {
+  const headerRow = document.getElementById("headerRow");
+  headerRow.innerHTML = `
+    <th>Symbol</th>
+    <th>Day 1</th>
+    <th>Day 2</th>
+    <th>Day 3</th>
+    <th>Day 4</th>
+    <th>Day 5</th>
+    <th>Day 6</th>
+    <th>Day 7</th>
+    <th>Highest Positive % (Time)</th>
+    <th>Lowest Negative % (Time)</th>
+  `;
+}
+
+
+
+window.onload = async function() {
+        try {
+            updateTableHeaders();
+            loadCacheFromStorage();
+            await loadData();
+            
+            setInterval(async () => {
+                document.getElementById('status').innerHTML = 'Refreshing margin debt data...';
+                updateTableHeaders();
+                await refreshMarginDebt(false);
+                nextRefreshTime = new Date().getTime() + REFRESH_INTERVAL;
+            }, REFRESH_INTERVAL);
+            
+            nextRefreshTime = new Date().getTime() + REFRESH_INTERVAL;
+            setInterval(updateCountdowns, 1000);
+            
+        } catch (error) {
+            document.getElementById('status').innerHTML = 'Error: ' + error.message;
+            console.error(error);
+        }
+    };
+
+  </script>
+  <script>
+    // Hiển thị/ẩn nút khi cuộn
+    window.addEventListener('scroll', function() {
+      const backToTopButton = document.getElementById('backToTop');
+      if (window.scrollY > 300) { // Hiện nút khi cuộn xuống 300px
+        backToTopButton.classList.add('show');
+      } else {
+        backToTopButton.classList.remove('show');
+      }
+    });
+    
+    // Xử lý sự kiện click
+    document.getElementById('backToTop').addEventListener('click', function() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth' // Cuộn mượt về đầu trang
+      });
+    });
+    </script>
+</body>
+</html>
