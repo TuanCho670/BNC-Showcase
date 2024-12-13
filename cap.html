@@ -34,7 +34,7 @@
             background-color: #f9f9f9;
         }
         .positive {
-            color: green;
+            color: rgb(8, 218, 8);
         }
         .negative {
             color: rgb(0, 0, 0);
@@ -64,13 +64,13 @@
                 <tr>
                     <th>Symbol</th>
                     <th>Total Flow</th>
-                    <th>Day 7</th>
-                    <th>Day 6</th>
-                    <th>Day 5</th>
-                    <th>Day 4</th>
-                    <th>Day 3</th>
-                    <th>Day 2</th>
                     <th>Day 1</th>
+                    <th>Day 2</th>
+                    <th>Day 3</th>
+                    <th>Day 4</th>
+                    <th>Day 5</th>
+                    <th>Day 6</th>
+                    <th>Day 7</th>
                 </tr>
             </thead>
             <tbody id="dataTable">
@@ -298,32 +298,34 @@
             `;
         }
 
-        function filterAndDisplayData() {
-            const searchTerm = document.getElementById('searchInput').value.toUpperCase();
-            const dataTable = document.getElementById('dataTable');
-            
-            dataTable.innerHTML = '';
-            
-            const filteredData = volumeData.filter(data => 
-                data.symbol.includes(searchTerm)
-            );
+       // Trong hàm filterAndDisplayData, sửa lại phần xử lý flows:
+function filterAndDisplayData() {
+    const searchTerm = document.getElementById('searchInput').value.toUpperCase();
+    const dataTable = document.getElementById('dataTable');
+    
+    dataTable.innerHTML = '';
+    
+    const filteredData = volumeData.filter(data => 
+        data.symbol.includes(searchTerm)
+    );
 
-            filteredData.forEach(data => {
-                const row = document.createElement('tr');
-                const flowCells = data.flows.map(flow => 
-                    `<td class="${getVolumeClass(flow.netCapitalInflowVolume)}">
-                        ${formatNumber(flow.netCapitalInflowVolume)}
-                    </td>`
-                ).join('');
+    filteredData.forEach(data => {
+        const row = document.createElement('tr');
+        // Đảo ngược mảng flows trước khi render
+        const flowCells = [...data.flows].reverse().map(flow => 
+            `<td class="${getVolumeClass(flow.netCapitalInflowVolume)}">
+                ${formatNumber(flow.netCapitalInflowVolume)}
+            </td>`
+        ).join('');
 
-                row.innerHTML = `
-                    <td>${data.symbol}</td>
-                    <td class="${getVolumeClass(data.totalFlow)}">${formatNumber(data.totalFlow)}</td>
-                    ${flowCells}
-                `;
-                dataTable.appendChild(row);
-            });
-        }
+        row.innerHTML = `
+            <td>${data.symbol}</td>
+            <td class="${getVolumeClass(data.totalFlow)}">${formatNumber(data.totalFlow)}</td>
+            ${flowCells}
+        `;
+        dataTable.appendChild(row);
+    });
+}
 
         function getVolumeClass(value) {
             return value >= 0 ? 'positive' : 'negative';
