@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Binance Capital Flow Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        input, button {
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            margin-right: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: normal;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .positive {
+            color: green;
+        }
+        .negative {
+            color: red;
+        }
+        .loading {
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search symbols">
+            <button onclick="fetchAllData()" id="fetchButton">Fetch Data</button>
+            <button onclick="sortTable()" id="sortButton">Sort by Total Flow</button>
+            <button onclick="clearCache()" id="clearButton">Clear Cache</button>
+        </div>
+        <div id="loading" class="loading" style="display: none;">Loading data... <span id="progress"></span></div>
+        <div id="error" class="error"></div>
+        <div id="stats"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Total Flow</th>
+                    <th>Day 7</th>
+                    <th>Day 6</th>
+                    <th>Day 5</th>
+                    <th>Day 4</th>
+                    <th>Day 3</th>
+                    <th>Day 2</th>
+                    <th>Day 1</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const baseUrl = 'https://www.binance.com/bapi/earn/v1/public/indicator/capital-flow/volumeTypeNetCapitalIn';
+        const exchangeInfoUrl = 'https://api.binance.com/api/v3/exchangeInfo';
+        let symbols = [];
+        let volumeData = [];
+        let sortDirection = 'desc';
+        let isProcessing = false;
+        let autoRefreshTimer = null;
+
+        const BATCH_SIZE = 50;
+        const BATCH_DELAY = 45000;
+        const REQUEST_DELAY = 1000;
+        const CACHE_KEY = 'binance_volume_data';
+        const CACHE_TIMESTAMP_KEY = 'binance_volume_timestamp';
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
+        const AUTO_REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 giờ
+
+        function formatNumber(num) {
+            if (typeof num !== 'number') return '0';
+            
+            const absNum = Math.abs(num);
+            let formattedNum;
+            
+            if (absNum >= 1000000) {
+                formattedNum = (num / 1000000).toFixed(2) + 'M';
+            } else if (absNum >= 1000) {
+                formattedNum = (num / 1000).toFixed(2) + 'K';
+            } else {
+                formattedNum = num.toFixed(2);
+            }
+
+            formattedNum = formattedNum.replace(/\.?0+([KM])?$/, '$1');
+            return formattedNum;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function saveToCache(data) {
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+            } catch (error) {
+                console.error('Error saving to cache:', error);
+            }
+        }
+
+        function getFromCache() {
+            try {
+                const timestamp = parseInt(localStorage.getItem(CACHE_TIMESTAMP_KEY));
+                const now = Date.now();
+                
+                if (!timestamp || now - timestamp > CACHE_DURATION) {
+                    return null;
+                }
+
+                const data = JSON.parse(localStorage.getItem(CACHE_KEY));
+                return data;
+            } catch (error) {
+                console.error('Error reading from cache:', error);
+                return null;
+            }
+        }
+
+        function setupAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+            }
+
+            autoRefreshTimer = setInterval(() => {
+                if (!isProcessing) {
+                    console.log('Auto refreshing data...');
+                    fetchAllData();
+                }
+            }, AUTO_REFRESH_INTERVAL);
+
+            console.log('Auto refresh set for every 2 hours');
+        }
+
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    
+                    if (response.status === 429) {
+                        await delay(BATCH_DELAY);
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    lastError = error;
+                    if (i < maxRetries - 1) {
+                        await delay(5000 * (i + 1));
+                    }
+                }
+            }
+            throw lastError;
+        }
+
+        async function getExchangeInfo() {
+            try {
+                const data = await fetchWithRetry(exchangeInfoUrl, {});
+                return data.symbols
+                    .filter(s => s.status === 'TRADING' && s.symbol.endsWith('USDT'))
+                    .map(s => s.symbol);
+            } catch (error) {
+                showError('Error fetching exchange info: ' + error.message);
+                return [];
+            }
+        }
+
+        async function fetchVolumeData(symbol) {
+            try {
+                const params = new URLSearchParams({
+                    groupCount: 7,
+                    groupSize: 24,
+                    period: 'HOUR_1',
+                    volumeType: 'BIG',
+                    symbol: symbol
+                });
+                const data = await fetchWithRetry(`${baseUrl}?${params}`, {});
+                return data;
+            } catch (error) {
+                console.error(`Error fetching data for ${symbol}:`, error);
+                return null;
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            setTimeout(() => {
+                errorElement.textContent = '';
+            }, 5000);
+        }
+
+        function updateProgress(current, total, currentBatch, totalBatches) {
+            const progressElement = document.getElementById('progress');
+            progressElement.textContent = `Processing ${current}/${total} symbols (Batch ${currentBatch}/${totalBatches})`;
+        }
+
+        function showProgress(message) {
+            const progressElement = document.getElementById('progress');
+            progressElement.textContent = message;
+        }
+
+        async function processBatch(symbols) {
+            const batches = [];
+            for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+                batches.push(symbols.slice(i, Math.min(i + BATCH_SIZE, symbols.length)));
+            }
+
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+                const batch = batches[batchIndex];
+                const totalProcessed = batchIndex * BATCH_SIZE;
+                
+                for (let i = 0; i < batch.length; i++) {
+                    const symbol = batch[i];
+                    updateProgress(totalProcessed + i + 1, symbols.length, batchIndex + 1, batches.length);
+
+                    try {
+                        const data = await fetchVolumeData(symbol);
+                        if (data && data.data) {
+                            const flows = data.data.netCapitalInList || [];
+                            const totalFlow = data.data.totalInFlow || 0;
+                            
+                            volumeData.push({
+                                symbol,
+                                totalFlow,
+                                flows,
+                                lastUpdated: new Date().toLocaleString()
+                            });
+                        }
+                        
+                        filterAndDisplayData();
+                        
+                        if (i < batch.length - 1) {
+                            await delay(REQUEST_DELAY);
+                        }
+                    } catch (error) {
+                        console.error(`Error processing ${symbol}:`, error);
+                    }
+                }
+
+                saveToCache(volumeData);
+
+                if (batchIndex < batches.length - 1) {
+                    showProgress(`Waiting 45s before processing batch ${batchIndex + 2}/${batches.length}...`);
+                    await delay(BATCH_DELAY);
+                }
+            }
+        }
+
+        function updateStats() {
+            const statsElement = document.getElementById('stats');
+            const totalSymbols = volumeData.length;
+            const positiveFlow = volumeData.filter(d => d.totalFlow >= 0).length;
+            const negativeFlow = volumeData.filter(d => d.totalFlow < 0).length;
+            
+            const timestamp = parseInt(localStorage.getItem(CACHE_TIMESTAMP_KEY));
+            const cacheTimeStr = timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+            const nextUpdateStr = timestamp ? new Date(timestamp + AUTO_REFRESH_INTERVAL).toLocaleString() : 'N/A';
+            
+            statsElement.innerHTML = `
+                Total Pairs: ${totalSymbols} | 
+                Positive Flow: ${positiveFlow} | 
+                Negative Flow: ${negativeFlow} |
+                Last Updated: ${cacheTimeStr} |
+                Next Update: ${nextUpdateStr}
+            `;
+        }
+
+        function filterAndDisplayData() {
+            const searchTerm = document.getElementById('searchInput').value.toUpperCase();
+            const dataTable = document.getElementById('dataTable');
+            
+            dataTable.innerHTML = '';
+            
+            const filteredData = volumeData.filter(data => 
+                data.symbol.includes(searchTerm)
+            );
+
+            filteredData.forEach(data => {
+                const row = document.createElement('tr');
+                const flowCells = data.flows.map(flow => 
+                    `<td class="${getVolumeClass(flow.netCapitalInflowVolume)}">
+                        ${formatNumber(flow.netCapitalInflowVolume)}
+                    </td>`
+                ).join('');
+
+                row.innerHTML = `
+                    <td>${data.symbol}</td>
+                    <td class="${getVolumeClass(data.totalFlow)}">${formatNumber(data.totalFlow)}</td>
+                    ${flowCells}
+                `;
+                dataTable.appendChild(row);
+            });
+        }
+
+        function getVolumeClass(value) {
+            return value >= 0 ? 'positive' : 'negative';
+        }
+
+        function sortTable() {
+            sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+            volumeData.sort((a, b) => {
+                return sortDirection === 'desc' 
+                    ? b.totalFlow - a.totalFlow 
+                    : a.totalFlow - b.totalFlow;
+            });
+            filterAndDisplayData();
+        }
+
+        async function fetchAllData() {
+            if (isProcessing) {
+                showError('Already processing data. Please wait...');
+                return;
+            }
+
+            const fetchButton = document.getElementById('fetchButton');
+            const loadingDiv = document.getElementById('loading');
+            const dataTable = document.getElementById('dataTable');
+            
+            try {
+                const cachedData = getFromCache();
+                if (cachedData) {
+                    volumeData = cachedData;
+                    filterAndDisplayData();
+                    updateStats();
+                    return;
+                }
+
+                isProcessing = true;
+                fetchButton.disabled = true;
+                loadingDiv.style.display = 'block';
+                dataTable.innerHTML = '';
+                volumeData = [];
+
+                if (symbols.length === 0) {
+                    symbols = await getExchangeInfo();
+                }
+
+                await processBatch(symbols);
+                saveToCache(volumeData);
+                updateStats();
+            } catch (error) {
+                showError('Error fetching data: ' + error.message);
+            } finally {
+                loadingDiv.style.display = 'none';
+                fetchButton.disabled = false;
+                isProcessing = false;
+            }
+        }
+
+        function clearCache() {
+    try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        volumeData = [];
+        filterAndDisplayData();
+        updateStats();
+        showError('Cache cleared successfully!');
+        // Fetch dữ liệu mới sau khi clear cache
+        fetchAllData();
+    } catch (error) {
+        showError('Error clearing cache: ' + error.message);
+    }
+}
+
+        // Khởi tạo ứng dụng
+        document.addEventListener('DOMContentLoaded', () => {
+            const cachedData = getFromCache();
+            if (cachedData) {
+                volumeData = cachedData;
+                filterAndDisplayData();
+                updateStats();
+            } else {
+                fetchAllData();
+            }
+            
+            setupAutoRefresh();
+        });
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterAndDisplayData);
+    </script>
+</body>
+</html>
