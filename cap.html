@@ -46,6 +46,19 @@
             color: red;
             margin: 10px 0;
         }
+        .symbol-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.symbol-link:hover {
+    background-color: #e6e6e6;
+    text-decoration: underline;
+}
     </style>
 </head>
 <body>
@@ -298,7 +311,7 @@
             `;
         }
 
-       // Trong hàm filterAndDisplayData, sửa lại phần xử lý flows:
+      // Sau đó sửa lại hàm filterAndDisplayData():
 function filterAndDisplayData() {
     const searchTerm = document.getElementById('searchInput').value.toUpperCase();
     const dataTable = document.getElementById('dataTable');
@@ -311,20 +324,29 @@ function filterAndDisplayData() {
 
     filteredData.forEach(data => {
         const row = document.createElement('tr');
-        // Đảo ngược mảng flows trước khi render
         const flowCells = [...data.flows].reverse().map(flow => 
             `<td class="${getVolumeClass(flow.netCapitalInflowVolume)}">
                 ${formatNumber(flow.netCapitalInflowVolume)}
             </td>`
         ).join('');
 
+        const binanceLink = `https://www.binance.com/vi/trade/${data.symbol}?type=spot`;
+        
         row.innerHTML = `
-            <td>${data.symbol}</td>
+            <td>
+                <a href="${binanceLink}" 
+                   target="_blank" 
+                   class="symbol-link">
+                    ${data.symbol}
+                </a>
+            </td>
             <td class="${getVolumeClass(data.totalFlow)}">${formatNumber(data.totalFlow)}</td>
             ${flowCells}
         `;
         dataTable.appendChild(row);
     });
+
+    updateStats();
 }
 
         function getVolumeClass(value) {
