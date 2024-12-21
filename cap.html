@@ -8,7 +8,7 @@
             margin: 20px;
         }
         .container {
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         input, button {
@@ -33,25 +33,32 @@
         tr:nth-child(even) {
             background-color: #f9f9f9;
         }
-        .positive { color: rgb(8, 218, 8); }
-        .negative { color: rgb(0, 0, 0); }
-        .loading { margin: 10px 0; }
-        .error { 
+        .positive {
+            color: rgb(8, 218, 8);
+        }
+        .negative {
+            color: rgb(0, 0, 0);
+        }
+        .loading {
+            margin: 10px 0;
+        }
+        .error {
             color: red;
             margin: 10px 0;
         }
         .symbol-link {
-            text-decoration: none;
-            color: inherit;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        .symbol-link:hover {
-            background-color: #e6e6e6;
-            text-decoration: underline;
-        }
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.symbol-link:hover {
+    background-color: #e6e6e6;
+    text-decoration: underline;
+}
     </style>
 </head>
 <body>
@@ -69,9 +76,6 @@
             <thead>
                 <tr>
                     <th>Symbol</th>
-                    <th>Rank</th>
-                    <th>Market Cap</th>
-                    <th>FDMC</th>
                     <th>Total Flow</th>
                     <th>Day 1</th>
                     <th>Day 2</th>
@@ -82,380 +86,355 @@
                     <th>Day 7</th>
                 </tr>
             </thead>
-            <tbody id="dataTable"></tbody>
+            <tbody id="dataTable">
+            </tbody>
         </table>
     </div>
 
     <script>
-        // Constants
-        const API = {
-            BASE_URL: 'https://www.binance.com/bapi/earn/v1/public/indicator/capital-flow/volumeTypeNetCapitalIn',
-            MARKET_DATA_URL: 'https://www.binance.com/bapi/apex/v1/friendly/apex/marketing/tardingPair/detail',
-            EXCHANGE_INFO_URL: 'https://api.binance.com/api/v3/exchangeInfo'
-        };
+        const baseUrl = 'https://www.binance.com/bapi/earn/v1/public/indicator/capital-flow/volumeTypeNetCapitalIn';
+        const exchangeInfoUrl = 'https://api.binance.com/api/v3/exchangeInfo';
+        let symbols = [];
+        let volumeData = [];
+        let sortDirection = 'desc';
+        let isProcessing = false;
+        let autoRefreshTimer = null;
 
-        const CONFIG = {
-            BATCH_SIZE: 50,
-            BATCH_DELAY: 45000,
-            REQUEST_DELAY: 1000,
-            CACHE_DURATION: 24 * 60 * 60 * 1000,
-            AUTO_REFRESH_INTERVAL: 2 * 60 * 60 * 1000
-        };
+        const BATCH_SIZE = 50;
+        const BATCH_DELAY = 45000;
+        const REQUEST_DELAY = 1000;
+        const CACHE_KEY = 'binance_volume_data';
+        const CACHE_TIMESTAMP_KEY = 'binance_volume_timestamp';
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 giờ
+        const AUTO_REFRESH_INTERVAL = 2 * 60 * 60 * 1000; // 2 giờ
 
-        const CACHE_KEYS = {
-            DATA: 'binance_volume_data',
-            TIMESTAMP: 'binance_volume_timestamp'
-        };
-
-        // State management
-        let state = {
-            symbols: [],
-            volumeData: [],
-            sortDirection: 'desc',
-            isProcessing: false,
-            autoRefreshTimer: null
-        };
-
-        // Utility functions
-        const utils = {
-            delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
+        function formatNumber(num) {
+            if (typeof num !== 'number') return '0';
             
-            getBaseSymbol: symbol => symbol.split('USDT')[0],
+            const absNum = Math.abs(num);
+            let formattedNum;
+            
+            if (absNum >= 1000000) {
+                formattedNum = (num / 1000000).toFixed(2) + 'M';
+            } else if (absNum >= 1000) {
+                formattedNum = (num / 1000).toFixed(2) + 'K';
+            } else {
+                formattedNum = num.toFixed(2);
+            }
 
-            formatNumber: (num) => {
-                if (typeof num !== 'number') return '0';
-                const absNum = Math.abs(num);
-                let formattedNum;
+            formattedNum = formattedNum.replace(/\.?0+([KM])?$/, '$1');
+            return formattedNum;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function saveToCache(data) {
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+                localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+            } catch (error) {
+                console.error('Error saving to cache:', error);
+            }
+        }
+
+        function getFromCache() {
+            try {
+                const timestamp = parseInt(localStorage.getItem(CACHE_TIMESTAMP_KEY));
+                const now = Date.now();
                 
-                if (absNum >= 1000000) {
-                    formattedNum = (num / 1000000).toFixed(2) + 'M';
-                } else if (absNum >= 1000) {
-                    formattedNum = (num / 1000).toFixed(2) + 'K';
-                } else {
-                    formattedNum = num.toFixed(2);
-                }
-                return formattedNum.replace(/\.?0+([KM])?$/, '$1');
-            },
-            
-            formatMarketCap: (num) => {
-                if (typeof num !== 'number' || isNaN(num)) return 'N/A';
-                const tiers = [
-                    { threshold: 1e12, suffix: 'T' },
-                    { threshold: 1e9, suffix: 'B' },
-                    { threshold: 1e6, suffix: 'M' },
-                    { threshold: 1e3, suffix: 'K' }
-                ];
-                
-                for (const {threshold, suffix} of tiers) {
-                    if (num >= threshold) {
-                        return `${(num / threshold).toFixed(2)}${suffix}`;
-                    }
-                }
-                return `${num.toFixed(2)}`;
-            },
-            
-            getVolumeClass: value => value >= 0 ? 'positive' : 'negative'
-        };
-
-        // Cache management
-        const cache = {
-            save: (data) => {
-                try {
-                    localStorage.setItem(CACHE_KEYS.DATA, JSON.stringify(data));
-                    localStorage.setItem(CACHE_KEYS.TIMESTAMP, Date.now().toString());
-                } catch (error) {
-                    console.error('Error saving to cache:', error);
-                }
-            },
-
-            get: () => {
-                try {
-                    const timestamp = parseInt(localStorage.getItem(CACHE_KEYS.TIMESTAMP));
-                    if (!timestamp || Date.now() - timestamp > CONFIG.CACHE_DURATION) return null;
-                    return JSON.parse(localStorage.getItem(CACHE_KEYS.DATA));
-                } catch (error) {
-                    console.error('Error reading from cache:', error);
+                if (!timestamp || now - timestamp > CACHE_DURATION) {
                     return null;
                 }
-            },
 
-            clear: () => {
-                try {
-                    localStorage.removeItem(CACHE_KEYS.DATA);
-                    localStorage.removeItem(CACHE_KEYS.TIMESTAMP);
-                    state.volumeData = [];
-                    displayData();
-                    updateStats();
-                    showMessage('Cache cleared successfully!');
+                const data = JSON.parse(localStorage.getItem(CACHE_KEY));
+                return data;
+            } catch (error) {
+                console.error('Error reading from cache:', error);
+                return null;
+            }
+        }
+
+        function setupAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+            }
+
+            autoRefreshTimer = setInterval(() => {
+                if (!isProcessing) {
+                    console.log('Auto refreshing data...');
                     fetchAllData();
-                } catch (error) {
-                    showMessage('Error clearing cache: ' + error.message, 'error');
                 }
-            }
-        };
+            }, AUTO_REFRESH_INTERVAL);
 
-        // API calls
-        const api = {
-            async fetchWithRetry(url, options, maxRetries = 3) {
-                let lastError;
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(url, options);
-                        if (response.status === 429) {
-                            await utils.delay(CONFIG.BATCH_DELAY);
-                            continue;
-                        }
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        return await response.json();
-                    } catch (error) {
-                        lastError = error;
-                        if (i < maxRetries - 1) await utils.delay(5000 * (i + 1));
+            console.log('Auto refresh set for every 2 hours');
+        }
+
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let lastError;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    
+                    if (response.status === 429) {
+                        await delay(BATCH_DELAY);
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    lastError = error;
+                    if (i < maxRetries - 1) {
+                        await delay(5000 * (i + 1));
                     }
                 }
-                throw lastError;
-            },
-
-            async getExchangeInfo() {
-                try {
-                    const data = await this.fetchWithRetry(API.EXCHANGE_INFO_URL, {});
-                    return data.symbols
-                        .filter(s => s.status === 'TRADING' && s.symbol.endsWith('USDT'))
-                        .map(s => s.symbol);
-                } catch (error) {
-                    showMessage('Error fetching exchange info: ' + error.message, 'error');
-                    return [];
-                }
-            },
-
-            async fetchMarketData(symbol) {
-                try {
-                    const baseSymbol = utils.getBaseSymbol(symbol);
-                    const data = await this.fetchWithRetry(`${API.MARKET_DATA_URL}?symbol=${baseSymbol}`);
-                    return {
-                        rank: data.data?.rk || 'N/A',
-                        marketCap: data.data?.mc || 'N/A',
-                        fdmc: data.data?.fdmc || 'N/A'
-                    };
-                } catch (error) {
-                    console.error(`Error fetching market data for ${symbol}:`, error);
-                    return { rank: 'N/A', marketCap: 'N/A', fdmc: 'N/A' };
-                }
-            },
-
-            async fetchVolumeData(symbol) {
-                try {
-                    const params = new URLSearchParams({
-                        groupCount: 7,
-                        groupSize: 24,
-                        period: 'HOUR_1',
-                        volumeType: 'BIG',
-                        symbol: symbol
-                    });
-                    const [volumeData, marketData] = await Promise.all([
-                        this.fetchWithRetry(`${API.BASE_URL}?${params}`),
-                        this.fetchMarketData(symbol)
-                    ]);
-                    return { volumeData, marketData };
-                } catch (error) {
-                    console.error(`Error fetching data for ${symbol}:`, error);
-                    return null;
-                }
             }
-        };
+            throw lastError;
+        }
 
-        // UI functions
-        function showMessage(message, type = 'info') {
-            const element = document.getElementById(type === 'error' ? 'error' : 'loading');
-            element.textContent = message;
-            if (type !== 'loading') {
-                setTimeout(() => element.textContent = '', 5000);
+        async function getExchangeInfo() {
+            try {
+                const data = await fetchWithRetry(exchangeInfoUrl, {});
+                return data.symbols
+                    .filter(s => s.status === 'TRADING' && s.symbol.endsWith('USDT'))
+                    .map(s => s.symbol);
+            } catch (error) {
+                showError('Error fetching exchange info: ' + error.message);
+                return [];
             }
+        }
+
+        async function fetchVolumeData(symbol) {
+            try {
+                const params = new URLSearchParams({
+                    groupCount: 7,
+                    groupSize: 24,
+                    period: 'HOUR_1',
+                    volumeType: 'BIG',
+                    symbol: symbol
+                });
+                const data = await fetchWithRetry(`${baseUrl}?${params}`, {});
+                return data;
+            } catch (error) {
+                console.error(`Error fetching data for ${symbol}:`, error);
+                return null;
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            setTimeout(() => {
+                errorElement.textContent = '';
+            }, 5000);
         }
 
         function updateProgress(current, total, currentBatch, totalBatches) {
-            showMessage(`Processing ${current}/${total} symbols (Batch ${currentBatch}/${totalBatches})`, 'loading');
+            const progressElement = document.getElementById('progress');
+            progressElement.textContent = `Processing ${current}/${total} symbols (Batch ${currentBatch}/${totalBatches})`;
         }
 
-        function updateStats() {
-            const statsElement = document.getElementById('stats');
-            const totalSymbols = state.volumeData.length;
-            const positiveFlow = state.volumeData.filter(d => d.totalFlow >= 0).length;
-            const negativeFlow = totalSymbols - positiveFlow;
-            
-            const timestamp = parseInt(localStorage.getItem(CACHE_KEYS.TIMESTAMP));
-            const lastUpdate = timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
-            const nextUpdate = timestamp ? new Date(timestamp + CONFIG.AUTO_REFRESH_INTERVAL).toLocaleString() : 'N/A';
-            
-            statsElement.innerHTML = `
-                Total Pairs: ${totalSymbols} | 
-                Positive Flow: ${positiveFlow} | 
-                Negative Flow: ${negativeFlow} |
-                Last Updated: ${lastUpdate} |
-                Next Update: ${nextUpdate}
-            `;
+        function showProgress(message) {
+            const progressElement = document.getElementById('progress');
+            progressElement.textContent = message;
         }
 
-        function displayData() {
-            const searchTerm = document.getElementById('searchInput').value.toUpperCase();
-            const dataTable = document.getElementById('dataTable');
-            dataTable.innerHTML = '';
-            
-            const filteredData = state.volumeData.filter(data => 
-                data.symbol.includes(searchTerm)
-            );
-
-            filteredData.forEach(data => {
-                const row = document.createElement('tr');
-                const flowCells = [...data.flows].reverse().map(flow => 
-                    `<td class="${utils.getVolumeClass(flow.netCapitalInflowVolume)}">
-                        ${utils.formatNumber(flow.netCapitalInflowVolume)}
-                    </td>`
-                ).join('');
-
-                row.innerHTML = `
-                    <td>
-                        <a href="https://www.binance.com/vi/trade/${data.symbol}?type=spot" 
-                           target="_blank" 
-                           class="symbol-link">
-                            ${data.symbol}
-                        </a>
-                    </td>
-                    <td>No.${data.marketData?.rank || 'N/A'}</td>
-                    <td>${utils.formatMarketCap(data.marketData?.marketCap)}</td>
-                    <td>${utils.formatMarketCap(data.marketData?.fdmc)}</td>
-                    <td class="${utils.getVolumeClass(data.totalFlow)}">
-                        ${utils.formatNumber(data.totalFlow)}
-                    </td>
-                    ${flowCells}
-                `;
-                dataTable.appendChild(row);
-            });
-
-            updateStats();
-        }
-
-        // Main functions
         async function processBatch(symbols) {
             const batches = [];
-            for (let i = 0; i < symbols.length; i += CONFIG.BATCH_SIZE) {
-                batches.push(symbols.slice(i, i + CONFIG.BATCH_SIZE));
+            for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+                batches.push(symbols.slice(i, Math.min(i + BATCH_SIZE, symbols.length)));
             }
 
             for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
                 const batch = batches[batchIndex];
-                const totalProcessed = batchIndex * CONFIG.BATCH_SIZE;
+                const totalProcessed = batchIndex * BATCH_SIZE;
                 
                 for (let i = 0; i < batch.length; i++) {
                     const symbol = batch[i];
                     updateProgress(totalProcessed + i + 1, symbols.length, batchIndex + 1, batches.length);
 
                     try {
-                        const data = await api.fetchVolumeData(symbol);
-                        if (data?.volumeData?.data) {
-                            state.volumeData.push({
+                        const data = await fetchVolumeData(symbol);
+                        if (data && data.data) {
+                            const flows = data.data.netCapitalInList || [];
+                            const totalFlow = data.data.totalInFlow || 0;
+                            
+                            volumeData.push({
                                 symbol,
-                                totalFlow: data.volumeData.data.totalInFlow || 0,
-                                flows: data.volumeData.data.netCapitalInList || [],
-                                marketData: data.marketData,
+                                totalFlow,
+                                flows,
                                 lastUpdated: new Date().toLocaleString()
                             });
                         }
                         
-                        displayData();
+                        filterAndDisplayData();
                         
                         if (i < batch.length - 1) {
-                            await utils.delay(CONFIG.REQUEST_DELAY);
+                            await delay(REQUEST_DELAY);
                         }
                     } catch (error) {
                         console.error(`Error processing ${symbol}:`, error);
                     }
                 }
 
-                cache.save(state.volumeData);
+                saveToCache(volumeData);
 
                 if (batchIndex < batches.length - 1) {
-                    showMessage(`Waiting before processing batch ${batchIndex + 2}/${batches.length}...`, 'loading');
-                    await utils.delay(CONFIG.BATCH_DELAY);
+                    showProgress(`Waiting 45s before processing batch ${batchIndex + 2}/${batches.length}...`);
+                    await delay(BATCH_DELAY);
                 }
             }
         }
 
-        function setupAutoRefresh() {
-            if (state.autoRefreshTimer) {
-                clearInterval(state.autoRefreshTimer);
-            }
+        function updateStats() {
+            const statsElement = document.getElementById('stats');
+            const totalSymbols = volumeData.length;
+            const positiveFlow = volumeData.filter(d => d.totalFlow >= 0).length;
+            const negativeFlow = volumeData.filter(d => d.totalFlow < 0).length;
+            
+            const timestamp = parseInt(localStorage.getItem(CACHE_TIMESTAMP_KEY));
+            const cacheTimeStr = timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+            const nextUpdateStr = timestamp ? new Date(timestamp + AUTO_REFRESH_INTERVAL).toLocaleString() : 'N/A';
+            
+            statsElement.innerHTML = `
+                Total Pairs: ${totalSymbols} | 
+                Positive Flow: ${positiveFlow} | 
+                Negative Flow: ${negativeFlow} |
+                Last Updated: ${cacheTimeStr} |
+                Next Update: ${nextUpdateStr}
+            `;
+        }
 
-            state.autoRefreshTimer = setInterval(() => {
-                if (!state.isProcessing) {
-                    console.log('Auto refreshing data...');
-                    fetchAllData();
-                }
-            }, CONFIG.AUTO_REFRESH_INTERVAL);
+      // Sau đó sửa lại hàm filterAndDisplayData():
+function filterAndDisplayData() {
+    const searchTerm = document.getElementById('searchInput').value.toUpperCase();
+    const dataTable = document.getElementById('dataTable');
+    
+    dataTable.innerHTML = '';
+    
+    const filteredData = volumeData.filter(data => 
+        data.symbol.includes(searchTerm)
+    );
+
+    filteredData.forEach(data => {
+        const row = document.createElement('tr');
+        const flowCells = [...data.flows].reverse().map(flow => 
+            `<td class="${getVolumeClass(flow.netCapitalInflowVolume)}">
+                ${formatNumber(flow.netCapitalInflowVolume)}
+            </td>`
+        ).join('');
+
+        const binanceLink = `https://www.binance.com/vi/trade/${data.symbol}?type=spot`;
+        
+        row.innerHTML = `
+            <td>
+                <a href="${binanceLink}" 
+                   target="_blank" 
+                   class="symbol-link">
+                    ${data.symbol}
+                </a>
+            </td>
+            <td class="${getVolumeClass(data.totalFlow)}">${formatNumber(data.totalFlow)}</td>
+            ${flowCells}
+        `;
+        dataTable.appendChild(row);
+    });
+
+    updateStats();
+}
+
+        function getVolumeClass(value) {
+            return value >= 0 ? 'positive' : 'negative';
+        }
+
+        function sortTable() {
+            sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+            volumeData.sort((a, b) => {
+                return sortDirection === 'desc' 
+                    ? b.totalFlow - a.totalFlow 
+                    : a.totalFlow - b.totalFlow;
+            });
+            filterAndDisplayData();
         }
 
         async function fetchAllData() {
-            if (state.isProcessing) {
-                showMessage('Already processing data. Please wait...', 'error');
+            if (isProcessing) {
+                showError('Already processing data. Please wait...');
                 return;
             }
 
             const fetchButton = document.getElementById('fetchButton');
             const loadingDiv = document.getElementById('loading');
+            const dataTable = document.getElementById('dataTable');
             
             try {
-                const cachedData = cache.get();
+                const cachedData = getFromCache();
                 if (cachedData) {
-                    state.volumeData = cachedData;
-                    displayData();
+                    volumeData = cachedData;
+                    filterAndDisplayData();
+                    updateStats();
                     return;
                 }
 
-                state.isProcessing = true;
+                isProcessing = true;
                 fetchButton.disabled = true;
                 loadingDiv.style.display = 'block';
-                state.volumeData = [];
+                dataTable.innerHTML = '';
+                volumeData = [];
 
-                if (state.symbols.length === 0) {
-                    state.symbols = await api.getExchangeInfo();
+                if (symbols.length === 0) {
+                    symbols = await getExchangeInfo();
                 }
 
-                await processBatch(state.symbols);
-                cache.save(state.volumeData);
+                await processBatch(symbols);
+                saveToCache(volumeData);
                 updateStats();
             } catch (error) {
-                showMessage('Error fetching data: ' + error.message, 'error');
+                showError('Error fetching data: ' + error.message);
             } finally {
                 loadingDiv.style.display = 'none';
                 fetchButton.disabled = false;
-                state.isProcessing = false;
+                isProcessing = false;
             }
         }
 
-        function sortTable() {
-            state.sortDirection = state.sortDirection === 'desc' ? 'asc' : 'desc';
-            state.volumeData.sort((a, b) => {
-                return state.sortDirection === 'desc' 
-                    ? b.totalFlow - a.totalFlow 
-                    : a.totalFlow - b.totalFlow;
-            });
-            displayData();
-        }
+        function clearCache() {
+    try {
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY);
+        volumeData = [];
+        filterAndDisplayData();
+        updateStats();
+        showError('Cache cleared successfully!');
+        // Fetch dữ liệu mới sau khi clear cache
+        fetchAllData();
+    } catch (error) {
+        showError('Error clearing cache: ' + error.message);
+    }
+}
 
-        // Initialize
+        // Khởi tạo ứng dụng
         document.addEventListener('DOMContentLoaded', () => {
-            const cachedData = cache.get();
+            const cachedData = getFromCache();
             if (cachedData) {
-                state.volumeData = cachedData;
-                displayData();
+                volumeData = cachedData;
+                filterAndDisplayData();
+                updateStats();
             } else {
                 fetchAllData();
             }
+            
             setupAutoRefresh();
         });
 
         // Event listeners
-        document.getElementById('searchInput').addEventListener('input', displayData);
-        window.clearCache = cache.clear;
+        document.getElementById('searchInput').addEventListener('input', filterAndDisplayData);
     </script>
 </body>
 </html>
