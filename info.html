@@ -214,49 +214,56 @@
                 });
             }
 
-            function displayCoins(coins) {
-                coinGrid.innerHTML = '';
-                coins.forEach(coin => {
-                    const card = document.createElement('div');
-                    card.className = 'coin-card';
-                    card.innerHTML = `
-                        <div class="coin-header">
-                            <img src="${coin.logo_url}" alt="${coin.symbol}" class="coin-logo">
-                            <div class="coin-name">${coin.symbol}</div>
-                        </div>
-                        <div class="coin-sectors">
-                            ${coin.sectors.split(', ').map(sector => 
-                                `<span>${getEnglishSector(sector)}</span>`
-                            ).join('')}
-                        </div>
-                    `;
-                    
-                    card.addEventListener('click', () => showModal(coin));
-                    coinGrid.appendChild(card);
-                });
-            }
+           function getLogoUrl(originalUrl) {
+    // Lấy tên file từ URL gốc
+    const fileName = originalUrl.split('/').pop();
+    // Tạo URL mới từ GitHub Pages
+    return `https://tuancho670.github.io/BNC-Showcase/Asset/${fileName}`;
+}
 
-            function showModal(coin) {
-                modalContent.innerHTML = `
-                    <div class="coin-header">
-                        <img src="${coin.logo_url}" alt="${coin.symbol}" class="coin-logo">
-                        <h2>${coin.symbol}</h2>
-                    </div>
-                    <p><strong>Description:</strong> ${coin.description}</p>
-                    <p><strong>Sectors:</strong> ${coin.sectors.split(', ').map(sector => getEnglishSector(sector)).join(', ')}</p>
-                    <p><strong>Website:</strong> <a href="${coin.website}" target="_blank">${coin.website}</a></p>
-                    ${coin.whitepaper ? 
-                        `<p><strong>Whitepaper:</strong> <a href="${coin.whitepaper}" target="_blank">View Whitepaper</a></p>` 
-                        : ''}
-                    <div class="explorer-links">
-                        <strong>Explorers:</strong><br>
-                        ${coin.explorers.map(explorer => 
-                            `<a href="${explorer}" target="_blank"><i class="fas fa-external-link-alt"></i> Explorer</a>`
-                        ).join('')}
-                    </div>
-                `;
-                modal.style.display = 'block';
-            }
+function displayCoins(coins) {
+    coinGrid.innerHTML = '';
+    coins.forEach(coin => {
+        const card = document.createElement('div');
+        card.className = 'coin-card';
+        card.innerHTML = `
+            <div class="coin-header">
+                <img src="${getLogoUrl(coin.logo_url)}" alt="${coin.symbol}" class="coin-logo" onerror="this.src='${coin.logo_url}'">
+                <div class="coin-name">${coin.symbol}</div>
+            </div>
+            <div class="coin-sectors">
+                ${coin.sectors.split(', ').map(sector => 
+                    `<span>${getEnglishSector(sector)}</span>`
+                ).join('')}
+            </div>
+        `;
+        
+        card.addEventListener('click', () => showModal(coin));
+        coinGrid.appendChild(card);
+    });
+}
+
+function showModal(coin) {
+    modalContent.innerHTML = `
+        <div class="coin-header">
+            <img src="${getLogoUrl(coin.logo_url)}" alt="${coin.symbol}" class="coin-logo" onerror="this.src='${coin.logo_url}'">
+            <h2>${coin.symbol}</h2>
+        </div>
+        <p><strong>Description:</strong> ${coin.description}</p>
+        <p><strong>Sectors:</strong> ${coin.sectors.split(', ').map(sector => getEnglishSector(sector)).join(', ')}</p>
+        <p><strong>Website:</strong> <a href="${coin.website}" target="_blank">${coin.website}</a></p>
+        ${coin.whitepaper ? 
+            `<p><strong>Whitepaper:</strong> <a href="${coin.whitepaper}" target="_blank">View Whitepaper</a></p>` 
+            : ''}
+        <div class="explorer-links">
+            <strong>Explorers:</strong><br>
+            ${coin.explorers.map(explorer => 
+                `<a href="${explorer}" target="_blank"><i class="fas fa-external-link-alt"></i> Explorer</a>`
+            ).join('')}
+        </div>
+    `;
+    modal.style.display = 'block';
+}
 
             function filterCoins() {
                 const searchTerm = searchInput.value.toLowerCase();
